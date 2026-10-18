@@ -1,8 +1,27 @@
-/* Settings — grouped sections, folder list, danger zone. */
+/* Settings — one tab row plus one short page; folder list, danger zone. */
 
-.section {
-  /* Panels carry their own padding; only lists need to bleed to the edges. */
-  --list-flush: 1;
+/* The active tab's page: same column flow as the screen around it, with the
+   shell's spacing so switching tabs doesn't change the rhythm. */
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  min-width: 0;
+  animation: tabIn var(--dur-3) var(--ease-out) both;
+}
+
+.tabPanel > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Mirrors `.screen`'s entrance in App.module.css — short and horizontal-free
+   so it never fights the scroll position. */
+@keyframes tabIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
 }
 
 .folderList {
@@ -10,6 +29,11 @@
   flex-direction: column;
   gap: var(--sp-2);
   margin-bottom: var(--sp-2);
+  /* Many folders stay contained: the list scrolls inside its own block
+     instead of stretching the tab's page. */
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .folderRow {

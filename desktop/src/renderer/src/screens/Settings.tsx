@@ -1,38 +1,44 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import {
-  Clock,
-  Download,
-  FileDown,
-  FolderOpen,
-  Info,
-  Monitor,
-  Plus,
-  RotateCcw,
-  ShieldCheck,
-  X,
-} from 'lucide-react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import type {
   AppInfo,
   ApplicationSettings,
-  LogLevel,
   MonitoredFolder,
-  NotificationPreference,
   SettingsPatch,
 } from '../../../shared/types'
-import { api } from '../api'
-import Button from '../components/Button'
-import { FieldRow, Segmented, Select } from '../components/Field'
+import type { SettingsTab } from '../routes'
+import { DEFAULT_SETTINGS_TAB } from '../routes'
+import SettingsNav from './SettingsNav'
+import FoldersTab from './SettingsFoldersTab'
+import BehaviourTab from './SettingsBehaviourTab'
+import NotificationsTab from './SettingsNotificationsTab'
+import StartupTab from './SettingsStartupTab'
+import DiagnosticsTab from './SettingsDiagnosticsTab'
+import ResetTab from './SettingsResetTab'
 import PageHeader from '../components/PageHeader'
-import Panel, { Section } from '../components/Panel'
-import StatusPill from '../components/StatusPill'
-import Toggle from '../components/Toggle'
-import { EmptyState, ErrorState, LoadingState, Notice } from '../components/States'
+import Panel from '../components/Panel'
+import { LoadingState, ErrorState } from '../components/States'
 import { useConfirm } from '../components/Dialog'
 import { useToast } from '../components/Toast'
-import { folderStateLabel, folderStateTone, formatDate, modeLabel, shortenPath } from '../lib/format'
+import { api } from '../api'
+import { modeLabel } from '../lib/format'
 import styles from './Settings.module.css'
 
-const SettingsScreen: React.FC = () => {
+export interface SettingsScreenProps {
+  /** Currently open tab, from the location (`#/settings/<tab>`). */
+  tab?: SettingsTab
+  /** Reports tab changes so the shell can carry them in the hash. */
+  onTabChange?: (tab: SettingsTab) => void
+}
+
+/**
+ * Settings as six short pages behind one tab row, instead of one long scroll.
+ *
+ * This screen is the coordinator only: it owns data loading, the save
+ * pipeline and per-tab callbacks; each tab page owns its rows. The open tab
+ * is part of the address (`#/settings/<tab>`), so a tab is deep-linkable the
+ * same way a rule page is.
+ */
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ tab: tabProp, onTabChange }) => {
   const toast = useToast()
   const confirm = useConfirm()
 
@@ -43,6 +49,13 @@ const SettingsScreen: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState<string | null>(null)
   const [exporting, setExporting] = useState(false)
+  const [tab, setTab] = useState<SettingsTab>(tabProp ?? DEFAULT_SETTINGS_TAB)
+
+  // The shell owns the address; follow it when it changes (deep link, tab
+  // click routed back down). The seed value is handled by useState above.
+  useEffect(() => {
+    if (tabProp && tabProp !== tab) setTab(tabProp)
+  }, [tabProp])
 
   // Sends exactly the field that changed, as a typed patch. The previous
   // implementation replayed a whole accumulated "dirty" object, so editing one
@@ -179,6 +192,73 @@ const SettingsScreen: React.FC = () => {
     }
   }, [confirm, loadFolders, toast])
 
+  // One consistent status affordance for every setting that writes on change.
+  // It rides the row's label line, so appearing never shifts the layout.
+  const savingFor = useCallback(
+    (field: string): React.ReactNode => (pending === field ? <span className={styles.saving}>Saving…</span> : null),
+    [pending],
+  )
+
+  // Typed adapter for the tab pages' synchronous save callbacks.
+  const saveSync = useCallback(
+    (patch: SettingsPatch, label: string) => {
+      void save(patch, label)
+    },
+    [save],
+  )
+
+  const page = useMemo(() => {
+    if (!settings) return null
+    switch (tab) {
+      case 'folders':
+        return (
+          <FoldersTab
+            settings={settings}
+            folders={folders}
+            onAddFolder={() => void pickMonitorFolder()}
+            onRemoveFolder={(folder) => void removeFolder(folder)}
+            onSetFolderMode={(folder, mode) => void setFolderMode(folder, mode)}
+            onPickDestinationRoot={() => void pickDestinationRoot()}
+          />
+        )
+      case 'behaviour':
+        return <BehaviourTab settings={settings} savingFor={savingFor} save={saveSync} />
+      case 'notifications':
+        return <NotificationsTab settings={settings} savingFor={savingFor} save={saveSync} />
+      case 'startup':
+        return <StartupTab settings={settings} savingFor={savingFor} save={saveSync} />
+      case 'diagnostics':
+        return (
+          <DiagnosticsTab
+            settings={settings}
+            info={info}
+            exporting={exporting}
+            savingFor={savingFor}
+            save={saveSync}
+            onExport={() => void exportDiagnostics()}
+          />
+        )
+      case 'reset':
+        return <ResetTab onReset={() => void resetAll()} />
+      default:
+        return null
+    }
+  }, [
+    settings,
+    folders,
+    info,
+    exporting,
+    tab,
+    savingFor,
+    saveSync,
+    pickMonitorFolder,
+    removeFolder,
+    setFolderMode,
+    pickDestinationRoot,
+    exportDiagnostics,
+    resetAll,
+  ])
+
   if (loading) {
     return (
       <>
@@ -199,268 +279,26 @@ const SettingsScreen: React.FC = () => {
     )
   }
 
-  // One consistent status affordance for every setting that writes on change.
-  // It rides the row's label line, so appearing never shifts the layout.
-  const savingFor = (field: string): React.ReactNode =>
-    pending === field ? <span className={styles.saving}>Saving…</span> : null
-
   return (
     <>
       <PageHeader description="Folders, safety behaviour and diagnostics. Changes take effect immediately." />
-
-      {/* ---- folders ---------------------------------------------------- */}
-      <Section
-        title="Watched folders"
-        description="MySort only looks at loose files directly inside these folders."
-        actions={
-          <Button variant="secondary" size="sm" onClick={() => void pickMonitorFolder()}>
-            <Plus size={14} /> Add folder
-          </Button>
-        }
+      <SettingsNav
+        tab={tab}
+        onTabChange={(next) => {
+          setTab(next)
+          onTabChange?.(next)
+        }}
+      />
+      <section
+        className={styles.tabPanel}
+        id="settings-tabpanel"
+        role="tabpanel"
+        key={tab}
+        aria-labelledby={`settings-tab-${tab}`}
+        tabIndex={-1}
       >
-        {folders.length === 0 ? (
-          <EmptyState
-            compact
-            icon={<FolderOpen size={17} />}
-            title="No folders are being watched"
-            description="Add a folder and MySort will start sorting finished downloads from it."
-            action={
-              <Button variant="primary" size="sm" onClick={() => void pickMonitorFolder()}>
-                <FolderOpen size={14} /> Choose a folder
-              </Button>
-            }
-          />
-        ) : (
-          <ul className={styles.folderList}>
-            {folders.map((folder) => (
-              <li key={folder.id} className={styles.folderRow}>
-                <span className={styles.folderIcon} aria-hidden="true">
-                  <FolderOpen size={16} />
-                </span>
-                <div className={styles.folderText}>
-                  <span className={styles.folderPath} title={folder.path}>
-                    {shortenPath(folder.path, 60)}
-                  </span>
-                  <span className={styles.folderMeta}>
-                    Added {formatDate(folder.createdAt)}
-                    {folder.pendingCandidates > 0 && ` · ${folder.pendingCandidates} waiting`}
-                  </span>
-                </div>
-                <StatusPill tone={folderStateTone(folder.state)} size="sm">
-                  {folderStateLabel(folder.state)}
-                </StatusPill>
-                <Segmented
-                  ariaLabel={`Mode for ${folder.path}`}
-                  value={folder.mode}
-                  onChange={(mode) => void setFolderMode(folder, mode)}
-                  options={[
-                    { value: 'auto', label: 'Auto' },
-                    { value: 'manual', label: 'Manual' },
-                  ]}
-                />
-                <Button
-                  variant="quiet"
-                  size="sm"
-                  iconOnly
-                  onClick={() => void removeFolder(folder)}
-                  aria-label={`Stop watching ${folder.path}`}
-                  title="Stop watching"
-                >
-                  <X size={14} />
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <FieldRow label="Destination root" help="Every rule destination is resolved inside this folder.">
-          <code className={styles.pathValue} title={settings.destinationRoot}>
-            {shortenPath(settings.destinationRoot, 34)}
-          </code>
-          <Button variant="secondary" onClick={() => void pickDestinationRoot()}>
-            Change
-          </Button>
-        </FieldRow>
-      </Section>
-
-      {/* ---- behaviour ---------------------------------------------------- */}
-      <Section
-        title="Behaviour"
-        description="How much MySort does on its own."
-      >
-        <FieldRow
-          label="Review before moving"
-          help="When off, finished downloads are organised without waiting for your approval."
-          status={savingFor('previewBeforeAuto')}
-        >
-          <Toggle
-            checked={settings.previewBeforeAuto}
-            onChange={(next) => void save({ previewBeforeAuto: next }, 'Review setting')}
-            label="Review before moving"
-          />
-        </FieldRow>
-        <FieldRow
-          label="Keep history for"
-          help="Older activity is deleted when this window passes."
-          status={savingFor('historyRetentionDays')}
-        >
-          <Select
-            selectSize="sm"
-            aria-label="Keep history for"
-            value={settings.historyRetentionDays}
-            onChange={(e) => void save({ historyRetentionDays: Number(e.target.value) }, 'History retention')}
-            options={[
-              { value: '7', label: '7 days' },
-              { value: '30', label: '30 days' },
-              { value: '90', label: '90 days' },
-              { value: '365', label: '1 year' },
-            ]}
-          />
-        </FieldRow>
-        <FieldRow
-          label="Undo window"
-          help="How long a completed move can be reversed."
-          status={savingFor('undoWindowDays')}
-        >
-          <Select
-            selectSize="sm"
-            aria-label="Undo window"
-            value={settings.undoWindowDays}
-            onChange={(e) => void save({ undoWindowDays: Number(e.target.value) }, 'Undo window')}
-            options={[
-              { value: '1', label: '1 day' },
-              { value: '7', label: '7 days' },
-              { value: '30', label: '30 days' },
-              { value: '90', label: '90 days' },
-            ]}
-          />
-        </FieldRow>
-      </Section>
-
-      {/* ---- notifications -------------------------------------------------- */}
-      <Section title="Notifications" description="When MySort is allowed to interrupt you.">
-        <FieldRow label="Notify me about" status={savingFor('notifications')}>
-          <Segmented
-            ariaLabel="Notification preference"
-            value={settings.notifications}
-            onChange={(next: NotificationPreference) => void save({ notifications: next }, 'Notification preference')}
-            options={[
-              { value: 'failures', label: 'Failures only' },
-              { value: 'summaries', label: 'Summaries' },
-              { value: 'none', label: 'Nothing' },
-            ]}
-          />
-        </FieldRow>
-      </Section>
-
-      {/* ---- windows & startup ------------------------------------------------ */}
-      <Section title="Windows and startup">
-        <FieldRow
-          label={
-            <>
-              <Monitor size={14} aria-hidden="true" /> Keep running in the tray when I close the window
-            </>
-          }
-          help="Closing the window hides it. Use the tray menu to quit completely."
-          status={savingFor('closeButtonBehavior')}
-        >
-          <Toggle
-            checked={settings.closeButtonBehavior === 'tray'}
-            onChange={(next) =>
-              void save({ closeButtonBehavior: next ? 'tray' : 'quit' }, 'Close button behaviour')
-            }
-            label="Keep running in the tray"
-          />
-        </FieldRow>
-        <FieldRow
-          label={
-            <>
-              <Download size={14} aria-hidden="true" /> Start MySort when Windows starts
-            </>
-          }
-          status={savingFor('startWithWindows')}
-        >
-          <Toggle
-            checked={settings.startWithWindows}
-            onChange={(next) => void save({ startWithWindows: next }, 'Start with Windows')}
-            label="Start with Windows"
-          />
-        </FieldRow>
-        <FieldRow
-          label={
-            <>
-              <Clock size={14} aria-hidden="true" /> Resume monitoring on launch
-            </>
-          }
-          help="MySort also checks for interrupted moves when it starts."
-          status={savingFor('resumeMonitoringOnLaunch')}
-        >
-          <Toggle
-            checked={settings.resumeMonitoringOnLaunch}
-            onChange={(next) => void save({ resumeMonitoringOnLaunch: next }, 'Resume on launch')}
-            label="Resume monitoring on launch"
-          />
-        </FieldRow>
-      </Section>
-
-      {/* ---- diagnostics -------------------------------------------------------- */}
-      <Section
-        title="Diagnostics"
-        description="Everything here stays on this computer."
-        actions={
-          <Button variant="secondary" size="sm" onClick={() => void exportDiagnostics()} loading={exporting}>
-            <FileDown size={14} /> Export
-          </Button>
-        }
-      >
-        <FieldRow
-          label="Log level"
-          help="Debug records file names and is used for troubleshooting."
-          status={savingFor('logLevel')}
-        >
-          <Select
-            selectSize="sm"
-            aria-label="Log level"
-            value={settings.logLevel}
-            onChange={(e) => void save({ logLevel: e.target.value as LogLevel }, 'Log level')}
-            options={[
-              { value: 'error', label: 'Errors only' },
-              { value: 'warn', label: 'Warnings' },
-              { value: 'info', label: 'Info' },
-              { value: 'debug', label: 'Debug' },
-            ]}
-          />
-        </FieldRow>
-        <FieldRow label="Version">
-          <span className={styles.version}>{info ? `${info.version} · ${info.platform}` : '—'}</span>
-        </FieldRow>
-        <Notice tone="info" icon={<Info size={15} />}>
-          An exported diagnostics file contains your settings, folder counts and a tail of the log. Folder paths
-          are redacted. It is never uploaded.
-        </Notice>
-      </Section>
-
-      {/* ---- danger zone --------------------------------------------------------- */}
-      <section className={styles.dangerZone}>
-        <div className={styles.dangerText}>
-          <h2 className={styles.dangerTitle}>Reset MySort</h2>
-          <p className={styles.dangerDescription}>
-            Removes your rules, watched folders, settings and the whole move history. Files already moved are not
-            put back — only the record of them is deleted.
-          </p>
-        </div>
-        <Button variant="danger" onClick={() => void resetAll()}>
-          <RotateCcw size={14} /> Reset everything
-        </Button>
+        {page}
       </section>
-
-      <p className={styles.footnote}>
-        <ShieldCheck size={13} aria-hidden="true" />
-        <span>
-          MySort has no network access, no telemetry and no account. Everything it knows lives in{' '}
-          {info && <code className={styles.dataPath}>{info.userDataPath}</code>}
-        </span>
-      </p>
     </>
   )
 }

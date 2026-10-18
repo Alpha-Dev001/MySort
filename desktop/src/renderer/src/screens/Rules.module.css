@@ -1,39 +1,149 @@
-/* Rules — list, rule cards, and the filename tester. The rule editor itself
-   lives in RuleForm.module.css (shared with the rule detail page). */
+/* Rules — one flush panel: a filter toolbar, the order table, and the filename
+   tester as the panel's footer. The rule editor itself lives in RuleForm.module.css
+   (shared with the rule detail page). */
 
-.list {
+/* ---- toolbar --------------------------------------------------------------- */
+
+.toolbar {
   display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--divider);
+  -webkit-app-region: no-drag;
 }
 
-.filterNote {
+.search {
+  flex: 1 1 240px;
+  min-width: 200px;
+  max-width: 380px;
+}
+
+/* Quiet count line that appears only while filters are active. */
+.filterRow {
+  margin: 0;
+  padding: var(--sp-2) var(--sp-5);
+  border-bottom: 1px solid var(--divider);
   font: var(--t-caption);
   color: var(--text-muted);
-  padding: 0 var(--sp-1) var(--sp-1);
 }
 
-/* ---- tester --------------------------------------------------------------- */
+.tableWrap {
+  padding: var(--sp-5);
+}
+
+/* ---- rows ------------------------------------------------------------------ */
+
+.order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  font: var(--t-caption);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.ruleCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ruleName {
+  font: var(--t-body);
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ruleMatch {
+  font: var(--t-mono);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ruleWarn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font: var(--t-caption);
+  color: var(--warning-text);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.ruleWarn svg {
+  flex-shrink: 0;
+  color: var(--warning);
+}
+
+.dest {
+  display: block;
+  font: var(--t-mono);
+  color: var(--brand-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Disabled rules keep their switch live but read one step quieter. */
+.rowOff {
+  opacity: 0.55;
+}
+
+.toggleCell {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.dangerBtn:hover:not(:disabled) {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* ---- tester ---------------------------------------------------------------- */
 
 .tester {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--sp-5);
+  border-top: 1px solid var(--divider);
+  background: var(--surface-sunken);
+  border-radius: 0 0 var(--r-xl) var(--r-xl);
 }
 
-.testerInput {
+.testerForm {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  max-width: 460px;
+  max-width: 520px;
+}
+
+.testerForm > :first-child {
+  flex: 1;
+  min-width: 0;
 }
 
 .testResult {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-3);
-  padding-top: var(--sp-3);
-  border-top: 1px solid var(--divider);
+  gap: var(--sp-2);
 }
 
 .testSummary {
@@ -84,152 +194,6 @@
   color: var(--danger);
 }
 
-/* ---- rule card ------------------------------------------------------------- */
-
-.card {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: var(--sp-2);
-  align-items: start;
-  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-2);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  box-shadow: var(--elev-1);
-  transition:
-    border-color var(--dur-2) var(--ease-out),
-    box-shadow var(--dur-2) var(--ease-out),
-    opacity var(--dur-2) var(--ease-out);
-}
-
-.card:hover {
-  border-color: var(--border-strong);
-  box-shadow: var(--elev-2);
-}
-
-.cardOff {
-  opacity: 0.62;
-}
-
-.order {
-  display: flex;
-  justify-content: center;
-  padding-top: 10px;
-}
-
-.orderIndex {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: var(--surface-sunken);
-  border: 1px solid var(--border-soft);
-  font: var(--t-micro);
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.cardBody {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-}
-
-.cardHead {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-2);
-  width: 100%;
-  padding: 6px 0;
-  border-radius: var(--r-sm);
-  text-align: start;
-}
-
-.cardChevron {
-  display: flex;
-  flex-shrink: 0;
-  margin-top: 3px;
-  color: var(--text-muted);
-}
-
-.cardTitle {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.ruleName {
-  font: var(--t-headline);
-  color: var(--text);
-  letter-spacing: -0.008em;
-}
-
-.ruleSummary {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  flex-wrap: wrap;
-  font: var(--t-caption);
-  color: var(--text-muted);
-  min-width: 0;
-}
-
-.ruleSummary code {
-  font: var(--t-mono);
-  color: var(--brand-text);
-  overflow-wrap: anywhere;
-}
-
-.arrow {
-  color: var(--text-muted);
-}
-
-.cardAside {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-3);
-  flex-shrink: 0;
-  padding-top: 4px;
-}
-
-.rowActions {
-  display: flex;
-  gap: 2px;
-}
-
-.dangerBtn:hover:not(:disabled) {
-  background: var(--danger-tint);
-  color: var(--danger);
-}
-
-/* ---- warnings ---------------------------------------------------------------- */
-
-.warnings {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding-left: 22px;
-}
-
-.warning {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font: var(--t-caption);
-  color: var(--warning-text);
-  line-height: 1.45;
-}
-
-.warning svg {
-  flex-shrink: 0;
-  margin-top: 2px;
-  color: var(--warning);
-}
-
 /* Footer row of the create modal (Modal owns the padding and divider). */
 .modalActions {
   display: flex;
@@ -241,16 +205,13 @@
 }
 
 @media (max-width: 860px) {
-  .card {
-    grid-template-columns: 28px minmax(0, 1fr);
+  .toolbar {
+    align-items: stretch;
   }
-  .cardAside {
-    grid-column: 2;
-    justify-content: space-between;
-    padding-top: 0;
-    padding-bottom: var(--sp-2);
+  .search {
+    max-width: none;
   }
-  .testerInput {
+  .testerForm {
     flex-direction: column;
     align-items: stretch;
     max-width: none;

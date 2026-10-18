@@ -145,7 +145,7 @@ const Overview: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNavigat
     return (
       <>
         <PageHeader description="What MySort has been doing." />
-        <SkeletonCards count={3} height={96} />
+        <SkeletonCards count={4} height={96} />
         <Panel tone="raised" flush title="Recent activity" description="The last few moves MySort made.">
           <LoadingState label="Loading your activity" />
         </Panel>
@@ -202,9 +202,9 @@ const Overview: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNavigat
       )}
 
       {/* ---- summary row ------------------------------------------------------
-           Three distinct tiles in one row: what happened today, what is
-           wrong, and what is being watched. The fact tiles stay still; the
-           tiles that map to a next step are buttons. */}
+           Four distinct tiles in one row: what happened today, what is pending,
+           what is wrong, and what is being watched. The fact tiles stay still;
+           the tiles that map to a next step are buttons. */}
       <div className={styles.stats}>
         <Stat
           label="Sorted today"
@@ -212,6 +212,14 @@ const Overview: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNavigat
           hint={stats.sortedToday === 1 ? 'file' : 'files'}
           tone="brand"
           icon={<FolderInput size={13} />}
+          onClick={() => onNavigate?.('history')}
+        />
+        <Stat
+          label="Waiting for review"
+          value={formatCount(stats.waiting)}
+          hint={stats.waiting === 0 ? 'all caught up' : 'finished downloads'}
+          icon={<Inbox size={13} />}
+          onClick={() => onNavigate?.('rules')}
         />
         <Stat
           label="Needs attention"
@@ -219,7 +227,7 @@ const Overview: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNavigat
           hint={attention === 0 ? 'nothing to fix' : 'failed or unreviewed'}
           tone={attention > 0 ? 'warning' : 'neutral'}
           icon={<AlertTriangle size={13} />}
-          onClick={attention > 0 ? () => onNavigate?.('history') : undefined}
+          onClick={() => onNavigate?.('settings')}
         />
         <Stat
           label="Watched folders"
@@ -232,7 +240,7 @@ const Overview: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNavigat
                 : `${formatCount(unwatched)} paused or offline`
           }
           icon={<FolderOpen size={13} />}
-          onClick={() => onNavigate?.(emptyFolders ? 'onboarding' : 'settings')}
+          onClick={() => onNavigate?.('onboarding')}
         />
       </div>
 

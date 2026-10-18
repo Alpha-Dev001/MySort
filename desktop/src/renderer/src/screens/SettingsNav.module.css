@@ -1,0 +1,67 @@
+/* Settings tabs — the segmented navigation between the screen's sub-pages.
+   Sits under the page header; one tab per short page. */
+
+/* The row scrolls sideways when the window is too narrow, instead of letting
+   the labels wrap and make the row taller. */
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  align-self: flex-start;
+  max-width: 100%;
+  overflow-x: auto;
+  /* Hide the scrollbar but keep momentum: the row is small, so a stray bar
+     under it reads as noise. */
+  scrollbar-width: none;
+  -webkit-app-region: no-drag;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+  padding: 7px 13px;
+  border-radius: var(--r-md);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+  -webkit-app-region: no-drag;
+}
+
+.tab svg {
+  color: var(--text-muted);
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.tab:hover svg {
+  color: var(--text-secondary);
+}
+
+.tabActive,
+.tabActive:hover {
+  background: var(--brand-tint);
+  color: var(--brand-text);
+}
+
+.tabActive svg,
+.tabActive:hover svg {
+  color: var(--brand-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab {
+    transition: none;
+  }
+}

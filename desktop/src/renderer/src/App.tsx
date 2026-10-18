@@ -9,6 +9,7 @@ import TopBar from './components/TopBar'
 import { useMediaQuery } from './lib/hooks'
 import {
   DEFAULT_ROUTE,
+  DEFAULT_SETTINGS_TAB,
   onHashChange,
   readLocation,
   ROUTE_TITLES,
@@ -37,9 +38,12 @@ const Shell = (): React.ReactElement => {
   const narrow = useMediaQuery('(max-width: 1080px)')
   const mainRef = useRef<HTMLElement>(null)
 
-  const [location, setLocation] = useState<Location>(() => readLocation() ?? { route: DEFAULT_ROUTE, ruleId: null })
+  const [location, setLocation] = useState<Location>(
+    () => readLocation() ?? { route: DEFAULT_ROUTE, ruleId: null, settingsTab: null },
+  )
   const route: Route = location.route
   const ruleId = location.ruleId
+  const settingsTab = location.settingsTab
   // The rule's detail page names itself in the top bar, streamed up from the
   // screen; everything else uses the static route titles.
   const [ruleName, setRuleName] = useState<string | null>(null)
@@ -67,7 +71,7 @@ const Shell = (): React.ReactElement => {
   )
 
   const nav = useCallback((next: Route) => {
-    setLocation({ route: next, ruleId: null })
+    setLocation({ route: next, ruleId: null, settingsTab: null })
     setRuleName(null)
     setDrawerOpen(false)
   }, [])
@@ -75,7 +79,13 @@ const Shell = (): React.ReactElement => {
   // Opening a rule is document navigation: its own address, top-bar name.
   const openRule = useCallback((id: string, name: string) => {
     setRuleName(name)
-    setLocation({ route: 'rules', ruleId: id })
+    setLocation({ route: 'rules', ruleId: id, settingsTab: null })
+  }, [])
+
+  // Switching settings tabs rewrites the address in place — it must not reset
+  // the rule name or close the drawer.
+  const openSettingsTab = useCallback((tab: Location['settingsTab']) => {
+    setLocation({ route: 'settings', ruleId: null, settingsTab: tab })
   }, [])
 
   // A new screen must start at the top; otherwise the content column keeps
@@ -153,7 +163,9 @@ const Shell = (): React.ReactElement => {
       case 'history':
         return <HistoryScreen onNavigate={nav} />
       case 'settings':
-        return <SettingsScreen />
+        return (
+          <SettingsScreen tab={settingsTab ?? DEFAULT_SETTINGS_TAB} onTabChange={openSettingsTab} />
+        )
       default:
         return <Overview onNavigate={nav} />
     }
