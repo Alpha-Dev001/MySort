@@ -1,0 +1,187 @@
+.panel {
+  position: relative;
+  border-radius: var(--r-xl);
+  min-width: 0;
+}
+
+.raised {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+}
+
+.sunken {
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--sunken-shadow);
+}
+
+.plain {
+  background: transparent;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-5) var(--sp-6);
+  border-bottom: 1px solid var(--divider);
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.title {
+  font: var(--t-heading);
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.description {
+  margin: 3px 0 0;
+  font: var(--t-callout);
+  color: var(--text-secondary);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+.body {
+  padding: var(--sp-5) var(--sp-6);
+  min-width: 0;
+}
+
+/* `flush` is for tables and lists that should run to the panel edges. */
+.flush .body {
+  padding: 0;
+}
+
+.flush .body > * {
+  min-width: 0;
+}
+
+/* Inside a flush panel a table/lists own their own spacing. */
+.flush .body:empty {
+  display: none;
+}
+
+/* ---- stats --------------------------------------------------------------- */
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+@media (max-width: 860px) {
+  .statGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+.stat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--sp-5) var(--sp-5);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-2);
+  text-align: left;
+  min-width: 0;
+}
+
+/* The affordance only appears when the tile is actually interactive, so a
+   static tile is never dressed up as a control. */
+.statGo {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: flex;
+  color: var(--text-muted);
+  opacity: 0;
+  transform: translate(-2px, 2px);
+  transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+
+.statInteractive:hover .statGo,
+.statInteractive:focus-visible .statGo {
+  opacity: 1;
+  transform: none;
+}
+
+.statInteractive {
+  cursor: pointer;
+  transition:
+    transform var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out);
+}
+
+.statInteractive:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--elev-3);
+  border-color: var(--brand-line);
+}
+
+.statInteractive:active {
+  transform: translateY(0);
+  box-shadow: var(--elev-2);
+}
+
+.statLabel {
+  font: var(--t-caption);
+  color: var(--text-secondary);
+}
+
+/* Icon + label row. Stats without an icon keep their previous single-line
+   label; the wrapper changes nothing for them. */
+.statHead {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.statIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  color: var(--text-muted);
+}
+
+.statValue {
+  font: var(--t-stat);
+  color: var(--text);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.statValue_brand {
+  color: var(--brand-text);
+}
+.statValue_warning {
+  color: var(--warning);
+}
+.statValue_danger {
+  color: var(--danger);
+}
+
+.statHint {
+  font: var(--t-caption);
+  color: var(--text-muted);
+}

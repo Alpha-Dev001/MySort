@@ -1,0 +1,273 @@
+/* Field, TextInput, Select, Segmented — one input language for the whole app. */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field.inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.label,
+.rowLabel {
+  font: var(--t-caption);
+  color: var(--text-secondary);
+}
+
+.rowLabel {
+  color: var(--text);
+  font: var(--t-body);
+}
+
+.help {
+  font: var(--t-caption);
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.error {
+  font: var(--t-caption);
+  color: var(--danger-text);
+  margin: 0;
+}
+
+.control {
+  min-width: 0;
+}
+
+/* ---- text input --------------------------------------------------------- */
+
+.input {
+  width: 100%;
+  min-width: 0;
+  height: var(--control-h-md);
+  padding: 0 11px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: var(--t-body);
+  transition:
+    border-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    background-color var(--dur-1) var(--ease-out);
+}
+
+.input:hover:not(:disabled):not(:focus) {
+  border-color: var(--border-strong);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.input:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.input.invalid {
+  border-color: var(--danger);
+}
+
+.input.invalid:focus {
+  box-shadow: 0 0 0 3px var(--danger-ring);
+}
+
+.mono {
+  font: var(--t-mono);
+}
+
+/* ---- adornments --------------------------------------------------------- */
+
+.adorned,
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.adornment,
+.searchIcon {
+  position: absolute;
+  left: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+  display: flex;
+}
+
+.inputAdorned {
+  padding-left: 33px;
+}
+
+.invalidWrap .input {
+  border-color: var(--danger);
+}
+
+.clear {
+  position: absolute;
+  right: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--r-full);
+  color: var(--text-muted);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.clear:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.search {
+  width: 100%;
+}
+
+/* ---- select -------------------------------------------------------------- */
+
+.selectWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  height: var(--control-h-md);
+  padding: 0 32px 0 11px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font: var(--t-body);
+  cursor: pointer;
+  transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+}
+
+.select:hover:not(:disabled):not(:focus) {
+  border-color: var(--border-strong);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-ring);
+}
+
+.select:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.selectChevron {
+  position: absolute;
+  right: 11px;
+  width: 12px;
+  height: 12px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.selectSm .select {
+  height: var(--control-h-sm);
+  font: var(--t-caption);
+  padding: 0 28px 0 9px;
+}
+
+.selectSm .selectChevron {
+  right: 9px;
+}
+
+/* ---- segmented ----------------------------------------------------------- */
+
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-md);
+  background: var(--surface-track);
+  -webkit-app-region: no-drag;
+}
+
+.segment {
+  padding: 5px 12px;
+  border-radius: var(--r-xs);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-1) var(--ease-out);
+}
+
+.segment:hover:not(.segmentActive) {
+  color: var(--text);
+}
+
+.segmentActive {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--elev-1);
+}
+
+/* ---- settings row -------------------------------------------------------- */
+
+.fieldRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  padding: var(--sp-4) 0;
+  border-bottom: 1px solid var(--divider);
+}
+
+.fieldRow:last-child {
+  border-bottom: none;
+}
+
+.fieldRowText {
+  min-width: 0;
+}
+
+/* The label and its transient status share a line so a status appearing never
+   reflows the row. */
+.rowLabelLine {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.fieldRowControl {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .fieldRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-2);
+  }
+  .fieldRowControl {
+    justify-content: flex-start;
+  }
+}

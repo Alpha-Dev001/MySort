@@ -1,0 +1,152 @@
+/* Settings — grouped sections, folder list, danger zone. */
+
+.section {
+  /* Panels carry their own padding; only lists need to bleed to the edges. */
+  --list-flush: 1;
+}
+
+.folderList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-2);
+}
+
+.folderRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  transition: border-color var(--dur-2) var(--ease-out);
+}
+
+.folderRow:hover {
+  border-color: var(--border-strong);
+}
+
+.folderIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-md);
+  background: var(--brand-tint);
+  color: var(--brand);
+}
+
+.folderText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.folderPath {
+  font: var(--t-mono);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folderMeta {
+  font: var(--t-caption);
+  color: var(--text-muted);
+}
+
+.pathValue {
+  font: var(--t-mono);
+  color: var(--text-secondary);
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.version {
+  font: var(--t-caption);
+  color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.saving {
+  color: var(--brand-text);
+  font: var(--t-caption);
+  white-space: nowrap;
+}
+
+/* ---- danger zone ----------------------------------------------------------- */
+
+.dangerZone {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  flex-wrap: wrap;
+  padding: var(--sp-5) var(--sp-6);
+  border-radius: var(--r-xl);
+  background: var(--danger-tint);
+  border: 1px solid transparent;
+}
+
+.dangerText {
+  min-width: 0;
+  flex: 1 1 340px;
+}
+
+.dangerTitle {
+  font: var(--t-heading);
+  color: var(--danger-text);
+  letter-spacing: -0.012em;
+}
+
+.dangerDescription {
+  margin-top: var(--sp-2);
+  font: var(--t-callout);
+  color: var(--danger-text);
+  opacity: 0.85;
+  max-width: 62ch;
+  line-height: 1.55;
+}
+
+.footnote {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font: var(--t-caption);
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.footnote svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--brand);
+}
+
+.dataPath {
+  font: var(--t-mono);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 800px) {
+  .folderRow {
+    flex-wrap: wrap;
+  }
+  .dangerZone {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

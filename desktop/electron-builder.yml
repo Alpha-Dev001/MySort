@@ -1,0 +1,27 @@
+appId: com.mysort.desktop
+productName: MySort
+copyright: Copyright © 2026 MySort
+directories:
+  output: dist
+  buildResources: assets
+files:
+  - out/**/*
+asarUnpack:
+  - '**/node_modules/better-sqlite3/**'
+npmRebuild: true
+artifactName: MySort-Setup.exe
+win:
+  icon: assets/icon.ico
+  target:
+    - target: nsis
+      arch:
+        - x64
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: MySort
+  uninstallDisplayName: MySort
+  deleteAppDataOnUninstall: false

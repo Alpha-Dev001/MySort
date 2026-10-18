@@ -1,0 +1,197 @@
+.btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: var(--r-md);
+  font: var(--t-headline);
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-out),
+    opacity var(--dur-1) var(--ease-out);
+  -webkit-app-region: no-drag;
+}
+
+/* Disabled controls drop their brand entirely rather than sitting at reduced
+   opacity: a dimmed purple button still reads as "press me". */
+.btn:disabled {
+  cursor: not-allowed;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  border-color: transparent;
+  box-shadow: none;
+  opacity: 1;
+}
+
+.btn:not(:disabled):active {
+  transform: scale(0.975);
+}
+
+/* ---- sizes -------------------------------------------------------------- */
+
+.md {
+  height: var(--control-h-md);
+  padding: 0 15px;
+  font: var(--t-headline);
+}
+
+.lg {
+  height: var(--control-h-lg);
+  padding: 0 18px;
+  font: var(--t-headline);
+  border-radius: var(--r-md);
+}
+
+.sm {
+  height: var(--control-h-sm);
+  padding: 0 10px;
+  font: var(--t-label);
+  border-radius: var(--r-sm);
+  gap: 5px;
+}
+
+.iconOnly.md {
+  width: var(--control-h-md);
+  padding: 0;
+}
+.iconOnly.sm {
+  width: var(--control-h-sm);
+  padding: 0;
+}
+.iconOnly.lg {
+  width: var(--control-h-lg);
+  padding: 0;
+}
+
+/* ---- primary: unmistakable, brand-tinted shadow ------------------------ */
+
+.primary {
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: 0 1px 2px var(--brand-shadow), 0 2px 8px -2px var(--brand-shadow);
+}
+
+.primary:not(:disabled):hover {
+  background: var(--brand-hover);
+  box-shadow: 0 2px 4px var(--brand-shadow-hover), 0 6px 16px -4px var(--brand-shadow-hover);
+}
+
+.primary:not(:disabled):active {
+  background: var(--brand-pressed);
+  box-shadow: 0 1px 2px var(--brand-shadow);
+}
+
+/* ---- secondary: quiet surface, fine border ------------------------------ */
+
+.secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-1);
+}
+
+.secondary:not(:disabled):hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+}
+
+.secondary:not(:disabled):active {
+  background: var(--surface-active);
+  box-shadow: none;
+}
+
+/* ---- ghost: no chrome until needed ------------------------------------- */
+
+.ghost {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.ghost:not(:disabled):hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.ghost:not(:disabled):active {
+  background: var(--surface-active);
+}
+
+/* ---- quiet: for destructive-adjacent rows ------------------------------ */
+
+.quiet {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+}
+
+.quiet:not(:disabled):hover {
+  background: var(--surface-hover);
+  color: var(--text-secondary);
+}
+
+/* ---- danger --------------------------------------------------------------- */
+
+/* Destructive stays inside the brand family (calm-status policy: no red) —
+   it reads as a deeper, more serious shade of the primary instead, and
+   severity is signalled by the confirm dialog and the label wording. */
+.danger {
+  background: var(--danger);
+  color: var(--on-danger);
+  box-shadow: 0 1px 2px var(--danger-ring);
+}
+
+.danger:not(:disabled):hover {
+  background: var(--danger-hover);
+  box-shadow: 0 2px 8px -2px var(--danger-ring);
+}
+
+/* ---- loading ------------------------------------------------------------ */
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  opacity: 0.9;
+  animation: spin 640ms linear infinite;
+}
+
+.spinnerLabel {
+  opacity: 0.85;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ---- inline text action -------------------------------------------------- */
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--brand-text);
+  font: var(--t-headline);
+  border-radius: var(--r-xs);
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+
+.link:hover:not(:disabled) {
+  color: var(--brand-hover);
+}
+
+.link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

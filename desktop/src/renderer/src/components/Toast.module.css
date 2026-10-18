@@ -1,0 +1,115 @@
+.stack {
+  position: fixed;
+  right: var(--sp-5);
+  bottom: var(--sp-5);
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: min(380px, calc(100vw - 2 * var(--sp-5)));
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  background: var(--glass-surface);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--elev-4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  pointer-events: auto;
+  animation: enter var(--dur-3) var(--ease-spring) both;
+}
+
+.leaving {
+  animation: exit 180ms var(--ease-out) both;
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes exit {
+  to {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+.icon {
+  flex-shrink: 0;
+  display: flex;
+  margin-top: 1px;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.title {
+  font: var(--t-headline);
+  color: var(--text);
+  letter-spacing: -0.005em;
+}
+
+.description {
+  margin: 2px 0 0;
+  font: var(--t-callout);
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--r-xs);
+  color: var(--text-muted);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.close:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.info .icon {
+  color: var(--info);
+}
+.success .icon {
+  color: var(--success);
+}
+.warning .icon {
+  color: var(--warning);
+}
+.error .icon {
+  color: var(--danger);
+}
+
+.success {
+  border-left: 3px solid var(--success);
+}
+.warning {
+  border-left: 3px solid var(--warning);
+}
+.error {
+  border-left: 3px solid var(--danger);
+}
+.info {
+  border-left: 3px solid var(--info);
+}

@@ -1,0 +1,258 @@
+/* Rules — list, rule cards, and the filename tester. The rule editor itself
+   lives in RuleForm.module.css (shared with the rule detail page). */
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.filterNote {
+  font: var(--t-caption);
+  color: var(--text-muted);
+  padding: 0 var(--sp-1) var(--sp-1);
+}
+
+/* ---- tester --------------------------------------------------------------- */
+
+.tester {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.testerInput {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  max-width: 460px;
+}
+
+.testResult {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--divider);
+}
+
+.testSummary {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.testDest {
+  font: var(--t-mono);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.considered {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.consideredRow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+}
+
+.consideredName {
+  font: var(--t-caption);
+  color: var(--text);
+}
+
+.consideredResult {
+  font: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.consideredResult[data-result='won'] {
+  color: var(--brand-text);
+}
+.consideredResult[data-result='invalid'] {
+  color: var(--danger);
+}
+
+/* ---- rule card ------------------------------------------------------------- */
+
+.card {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  gap: var(--sp-2);
+  align-items: start;
+  padding: var(--sp-3) var(--sp-4) var(--sp-3) var(--sp-2);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-1);
+  transition:
+    border-color var(--dur-2) var(--ease-out),
+    box-shadow var(--dur-2) var(--ease-out),
+    opacity var(--dur-2) var(--ease-out);
+}
+
+.card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--elev-2);
+}
+
+.cardOff {
+  opacity: 0.62;
+}
+
+.order {
+  display: flex;
+  justify-content: center;
+  padding-top: 10px;
+}
+
+.orderIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  font: var(--t-micro);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.cardHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  width: 100%;
+  padding: 6px 0;
+  border-radius: var(--r-sm);
+  text-align: start;
+}
+
+.cardChevron {
+  display: flex;
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--text-muted);
+}
+
+.cardTitle {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ruleName {
+  font: var(--t-headline);
+  color: var(--text);
+  letter-spacing: -0.008em;
+}
+
+.ruleSummary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  font: var(--t-caption);
+  color: var(--text-muted);
+  min-width: 0;
+}
+
+.ruleSummary code {
+  font: var(--t-mono);
+  color: var(--brand-text);
+  overflow-wrap: anywhere;
+}
+
+.arrow {
+  color: var(--text-muted);
+}
+
+.cardAside {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-shrink: 0;
+  padding-top: 4px;
+}
+
+.rowActions {
+  display: flex;
+  gap: 2px;
+}
+
+.dangerBtn:hover:not(:disabled) {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* ---- warnings ---------------------------------------------------------------- */
+
+.warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 22px;
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font: var(--t-caption);
+  color: var(--warning-text);
+  line-height: 1.45;
+}
+
+.warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--warning);
+}
+
+/* Footer row of the create modal (Modal owns the padding and divider). */
+.modalActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .card {
+    grid-template-columns: 28px minmax(0, 1fr);
+  }
+  .cardAside {
+    grid-column: 2;
+    justify-content: space-between;
+    padding-top: 0;
+    padding-bottom: var(--sp-2);
+  }
+  .testerInput {
+    flex-direction: column;
+    align-items: stretch;
+    max-width: none;
+  }
+}

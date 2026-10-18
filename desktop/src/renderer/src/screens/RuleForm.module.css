@@ -1,0 +1,78 @@
+/* Shared rule editor fields: used by the create modal and the rule detail
+   page. Visual language matches Panel/Field tokens deliberately. */
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sp-4);
+}
+
+.extRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 22px;
+  align-items: center;
+}
+
+.chipsEmpty {
+  font: var(--t-caption);
+  color: var(--text-muted);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 4px 0 8px;
+  border-radius: var(--r-full);
+  background: var(--brand-tint);
+  border: 1px solid var(--brand-line);
+  color: var(--brand-text);
+}
+
+.chip code {
+  font: var(--t-mono);
+}
+
+.chipRemove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  color: inherit;
+  opacity: 0.6;
+  transition: opacity var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+
+.chipRemove:hover {
+  opacity: 1;
+  background: var(--surface-active);
+}
+
+.extAdd,
+.destRow {
+  display: flex;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+/* Error notice sits below the grid with the form's own rhythm. */
+.formGrid + * {
+  margin-top: var(--sp-4);
+}
+
+.formButtons {
+  display: flex;
+  gap: var(--sp-2);
+  margin-left: auto;
+}

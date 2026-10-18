@@ -1,0 +1,75 @@
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 9px;
+  border-radius: var(--r-md);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out);
+}
+
+.toggle:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* ---- icon: two glyphs cross-faded and counter-rotated ------------------- */
+
+.iconWrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  display: block;
+}
+
+.icon {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity 150ms var(--ease-out),
+    transform 220ms var(--ease-spring);
+}
+
+/* The glyph reports the mode you are currently in (moon = light, sun = dark),
+   matching the label's inverse phrasing: "Light mode" while dark is active.
+   Both glyphs stay neutral so the control does not introduce a third accent
+   colour alongside the purple brand. */
+.sun {
+  opacity: 0;
+  transform: rotate(-70deg) scale(0.6);
+  color: var(--text-secondary);
+}
+
+.moon {
+  opacity: 1;
+  transform: none;
+  color: var(--text-secondary);
+}
+
+[data-state='dark'] .sun {
+  opacity: 1;
+  transform: none;
+}
+
+[data-state='dark'] .moon {
+  opacity: 0;
+  transform: rotate(70deg) scale(0.6);
+}
+
+/* ---- label -------------------------------------------------------------- */
+
+.label {
+  flex: 1;
+  text-align: start;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* Colour-only change on click would be invisible; fade the text too. */
+  transition: color 150ms var(--ease-out);
+}

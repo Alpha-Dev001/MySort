@@ -1,0 +1,272 @@
+/* Loading skeletons, empty states, error states, inline notices. */
+
+.skeleton {
+  display: block;
+  background: linear-gradient(
+    100deg,
+    var(--surface-track) 20%,
+    var(--surface-hover) 42%,
+    var(--surface-track) 64%
+  );
+  background-size: 300% 100%;
+  animation: shimmer 1.4s var(--ease-in-out) infinite;
+}
+
+@keyframes shimmer {
+  from {
+    background-position: 140% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
+.skeletonTable {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0;
+}
+
+.skeletonRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-6);
+}
+
+.skeletonCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--sp-4);
+}
+
+.loading {
+  padding: var(--sp-2) 0;
+}
+
+/* ---- empty --------------------------------------------------------------- */
+
+/*
+ * Empty states are a centred composition: a tinted icon well, a title, one
+ * sentence of guidance and at most one action. They are designed to fill the
+ * panel they sit in, so a screen with nothing in it reads as "all caught up"
+ * rather than "broken".
+ *
+ * `compact` drops the centring for inline slots — table bodies and settings
+ * sections — where a full-width, centre-aligned block would look like a
+ * mistake.
+ */
+.empty,
+.error {
+  display: flex;
+  gap: var(--sp-4);
+  padding: var(--sp-8) var(--sp-6);
+  border-radius: var(--r-lg);
+}
+
+.empty {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.emptyCompact {
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: start;
+  padding: var(--sp-5) var(--sp-4);
+}
+
+.emptyIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--r-lg);
+  background: var(--surface-track);
+  color: var(--text-muted);
+  box-shadow: var(--elev-1);
+}
+
+/* The well takes the tone of the moment: neutral by default, brand for a
+   healthy-but-empty screen, success for "nothing left to do", info for a
+   search that found nothing, warning for a genuinely missing prerequisite. */
+.emptyIcon_neutral {
+  background: var(--surface-track);
+  color: var(--text-muted);
+}
+.emptyIcon_brand {
+  background: var(--brand-tint);
+  color: var(--brand-text);
+}
+.emptyIcon_success {
+  background: var(--success-tint);
+  color: var(--success-text);
+}
+.emptyIcon_info {
+  background: var(--info-tint);
+  color: var(--info-text);
+}
+.emptyIcon_warning {
+  background: var(--warning-tint);
+  color: var(--warning-text);
+}
+
+.emptyCompact .emptyIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-md);
+}
+
+.emptyText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.emptyCompact .emptyText {
+  align-items: flex-start;
+}
+
+.emptyTitle {
+  font: var(--t-title);
+  color: var(--text);
+}
+
+.emptyCompact .emptyTitle {
+  font: var(--t-headline);
+}
+
+.emptyDescription {
+  font: var(--t-body);
+  color: var(--text-secondary);
+  max-width: 46ch;
+}
+
+.emptyCompact .emptyDescription {
+  font: var(--t-callout);
+}
+
+.emptyAction {
+  margin-top: var(--sp-4);
+  display: flex;
+  gap: var(--sp-2);
+  justify-content: center;
+}
+
+.emptyCompact .emptyAction {
+  margin-top: var(--sp-3);
+  justify-content: flex-start;
+}
+
+/* ---- error --------------------------------------------------------------- */
+
+/* The error variant keeps the left-aligned, icon-lead layout of a diagnostic,
+   not the centred composition of an empty state. */
+.error {
+  align-items: flex-start;
+  background: var(--danger-tint);
+  border: 1px solid var(--danger-tint);
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--danger);
+  box-shadow: var(--elev-1);
+}
+
+.error .emptyTitle {
+  font: var(--t-headline);
+  color: var(--danger-text);
+}
+
+.error .emptyDescription {
+  font: var(--t-callout);
+  color: var(--danger-text);
+  opacity: 0.85;
+}
+
+.error .emptyText {
+  align-items: flex-start;
+}
+
+.error .emptyAction {
+  justify-content: flex-start;
+}
+
+/* ---- inline notice -------------------------------------------------------- */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-3);
+  padding: var(--sp-3) var(--sp-4);
+  border-radius: var(--r-lg);
+  border: 1px solid transparent;
+}
+
+.noticeIcon {
+  flex-shrink: 0;
+  display: flex;
+  margin-top: 1px;
+}
+
+.noticeText {
+  flex: 1;
+  min-width: 0;
+}
+
+.noticeTitle {
+  font: var(--t-headline);
+}
+
+.noticeBody {
+  font: var(--t-callout);
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.noticeBody p + p {
+  margin-top: var(--sp-2);
+}
+
+.noticeAction {
+  flex-shrink: 0;
+  margin-left: auto;
+  -webkit-app-region: no-drag;
+}
+
+.notice_info {
+  background: var(--info-tint);
+  color: var(--info-text);
+}
+.notice_success {
+  background: var(--success-tint);
+  color: var(--success-text);
+}
+.notice_warning {
+  background: var(--warning-tint);
+  color: var(--warning-text);
+}
+.notice_danger {
+  background: var(--danger-tint);
+  color: var(--danger-text);
+}
+.notice_brand {
+  background: var(--brand-tint);
+  color: var(--brand-text);
+  border-color: var(--brand-line);
+}

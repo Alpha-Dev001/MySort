@@ -1,0 +1,101 @@
+/* Rule detail page — a document-style edit surface: one narrow form panel,
+   live warnings, and the state/save controls. Order lives on the Rules list. */
+
+/* Breadcrumb back to the list. It sits above the lead and borrows the shell
+   gap, so the crumb rests right above the lead without its own section. */
+.backRow {
+  margin-bottom: calc(var(--sp-6) * -0.55);
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  margin-left: -9px;
+  border-radius: var(--r-sm);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  transition:
+    color var(--dur-1) var(--ease-out),
+    background-color var(--dur-1) var(--ease-out);
+}
+
+.backLink:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.backLink:focus-visible {
+  outline: 2px solid var(--brand-ring);
+  outline-offset: 1px;
+}
+
+.backLink svg {
+  flex-shrink: 0;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.metaText {
+  font: var(--t-caption);
+  color: var(--text-muted);
+}
+
+/* A destructive action lives in the lead row, quietly. */
+.deleteBtn:not(:hover):not(:focus-visible) {
+  color: var(--text-secondary);
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: var(--danger-tint);
+  color: var(--danger);
+}
+
+/* Warnings repeat the list card's language so a rule reads the same
+   everywhere it appears. */
+.warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 11px;
+  border-radius: var(--r-sm);
+  background: var(--warning-tint);
+  border: 1px solid var(--warning-line, var(--border-soft));
+  font: var(--t-caption);
+  color: var(--warning-text);
+  line-height: 1.45;
+}
+
+.warning svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--warning);
+}
+
+.formActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding-top: var(--sp-5);
+  border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 860px) {
+  .formActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

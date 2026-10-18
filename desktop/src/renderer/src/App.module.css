@@ -1,0 +1,138 @@
+/* Application shell: fixed sidebar + independently scrolling content column. */
+
+.root {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  grid-template-rows: 100vh;
+  grid-template-areas: 'sidebar content';
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg-app);
+}
+
+.content {
+  grid-area: content;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Dot grid on the content canvas. It lives on `.content` rather than on the
+   scroll area so it stays put while the page scrolls, and it sits below
+   `.main` (z-index 1) so it reads as the ground the content stands on. Every
+   panel paints an opaque surface over it, which leaves the grid visible only
+   in the gutters — structure in the background, never behind text.
+   The mask fades it out under the static top bar so the furniture strip stays
+   clean and the grid belongs to the scrolling canvas below it. */
+.content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--grid-ink) 0 1px, transparent 1.2px);
+  background-size: var(--grid-step) var(--grid-step);
+  background-position: center;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent var(--topbar-h),
+    #000 calc(var(--topbar-h) + var(--sp-6))
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent var(--topbar-h),
+    #000 calc(var(--topbar-h) + var(--sp-6))
+  );
+}
+
+.main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+.main:focus {
+  outline: none;
+}
+
+/* The top bar is in normal flow above the scroll area, so the column starts
+   right after it — no titlebar offset spacer needed any more. */
+.mainInner {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: var(--sp-5) var(--sp-8) var(--sp-9);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+}
+
+/* Flex children default to `min-width: auto`, so a wide table or toolbar would
+   push the column past the viewport instead of scrolling inside it. */
+.mainInner > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* One wrapper per route, keyed so the entrance replays when the screen
+   changes. It carries the column gap the screens rely on, so wrapping them
+   does not change their spacing. The fade is short and horizontal-free so it
+   never fights the scroll position or implies a transition that is not there. */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-6);
+  min-width: 0;
+  animation: screenIn var(--dur-3) var(--ease-out) both;
+}
+
+.screen > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+@keyframes screenIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+/* ---- compact navigation (narrow windows / tablets) ----------------------- */
+
+/* Compact-navigation tier. The class is applied by App.tsx from the
+   `(max-width: 1080px)` query in useMediaQuery; Sidebar.module.css repeats that
+   same width for the off-canvas drawer. Change one, change both.
+   The Menu button lives in the TopBar at this tier. */
+.narrow {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'content';
+}
+
+.narrow .mainInner {
+  padding-left: var(--sp-5);
+  padding-right: var(--sp-5);
+}
+
+@media (max-width: 700px) {
+  .mainInner {
+    padding-left: var(--sp-4);
+    padding-right: var(--sp-4);
+    gap: var(--sp-5);
+  }
+}
+
+/* Collapse the brand's cut-out tile when it sits over a solid footer. */
+@media (prefers-reduced-motion: reduce) {
+  .main {
+    scroll-behavior: auto;
+  }
+}
+

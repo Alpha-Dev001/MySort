@@ -1,0 +1,94 @@
+/* `overflow: auto` on both axes is what makes the sticky <th> work.
+   `overflow-y: hidden` used to sit here, which quietly made this element the
+   scroll container for a box that never scrolled vertically — so the header
+   row pinned itself to a stationary edge and drifted away with the page.
+   The height cap is supplied per table via --table-max-height; unbounded when
+   unset, for the short tables that never needed one. */
+.scroller {
+  width: 100%;
+  max-height: var(--table-max-height, none);
+  overflow: auto;
+  /* Deliberately NOT overscroll-behavior: contain. The box is shorter than the
+     page, and chaining is what lets a wheel gesture run out of the table and
+     carry on down the page instead of bouncing against the table's edge. */
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  /*
+   * Fixed layout so a long path can never widen the table past its container:
+   * content minimums are ignored and every column honours its <col> width.
+   * Below `min-width` the scroller takes over and the table scrolls sideways.
+   */
+  table-layout: fixed;
+  min-width: 620px;
+  font: var(--t-body);
+}
+
+.head th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: var(--sp-3) var(--sp-4);
+  text-align: start;
+  font: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.055em;
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.headerHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.row td {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--divider);
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+/* Truncation is opt-in per cell: a button cell must never be clipped. */
+.truncateCell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row:last-child td {
+  border-bottom: none;
+}
+
+.row:hover td {
+  background: var(--surface-hover);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: -2px;
+}
+
+.alignCenter {
+  text-align: center;
+}
+
+.alignEnd {
+  text-align: end;
+}
+
+.emptySlot {
+  padding: var(--sp-4);
+}

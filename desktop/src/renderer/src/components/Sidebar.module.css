@@ -1,0 +1,401 @@
+/* The permanent sidebar. One component, one layout, every route. */
+
+.sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 0 var(--sp-3) var(--sp-3);
+  background: var(--sidebar-bg);
+
+  /* The rail must still read apart from the (equally bright) content canvas,
+     so this boundary is a firm hairline rather than the soft one. */
+  border-right: 1px solid var(--border);
+  -webkit-app-region: drag;
+}
+
+/* ---- brand --------------------------------------------------------------- */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: var(--titlebar-h);
+  min-height: 52px;
+  padding: 0 var(--sp-2);
+  margin-bottom: var(--sp-4);
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: var(--r-sm);
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: 0 1px 2px var(--brand-shadow), 0 3px 8px -2px var(--brand-shadow);
+  flex-shrink: 0;
+  /* The glyph is knocked out of the tile, so the slot reads as a cut. */
+  --brand-cut: rgb(0 0 0 / 0.22);
+}
+
+.brandName {
+  font: var(--t-heading);
+  letter-spacing: -0.015em;
+  color: var(--text);
+  -webkit-app-region: no-drag;
+}
+
+/* ---- nav ----------------------------------------------------------------- */
+
+.nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding-bottom: var(--sp-2);
+  -webkit-app-region: no-drag;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.groupLabel {
+  padding: 0 var(--sp-2);
+  margin-bottom: 5px;
+  font: var(--t-micro);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-muted);
+}
+
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: var(--r-md);
+  font: var(--t-body);
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-align: start;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+
+.item:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.item:active {
+  background: var(--surface-active);
+}
+
+.itemIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.item:hover .itemIcon {
+  color: var(--text-secondary);
+}
+
+.itemLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Active: the row carries the primary colour itself — same fill, same
+   brand-tinted shadow treatment as the primary button, so "this is where
+   you are" reads with the strongest voice in the chrome. The label and icon
+   both sit on brand, and pressing deepens the fill exactly like a button. */
+.itemActive {
+  background: var(--nav-active-bg);
+  color: var(--brand-on);
+  font-weight: 600;
+  box-shadow: 0 1px 2px var(--brand-shadow), 0 4px 10px -4px var(--brand-shadow);
+}
+
+.itemActive:hover {
+  background: var(--nav-active-bg-hover);
+  color: var(--brand-on);
+  box-shadow: 0 2px 4px var(--brand-shadow-hover), 0 6px 16px -4px var(--brand-shadow-hover);
+}
+
+.itemActive:active {
+  background: var(--nav-active-bg-pressed);
+  color: var(--brand-on);
+  box-shadow: 0 1px 2px var(--brand-shadow);
+}
+
+.itemActive .itemIcon,
+.itemActive:hover .itemIcon {
+  color: var(--brand-on);
+}
+
+/* The attention badge would disappear tone-on-tone against the filled row,
+   so inside an active item it inverts into a raised chip: white surface,
+   brand label. */
+.itemActive .badge {
+  background: var(--brand-on);
+  color: var(--brand-pressed);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  border-radius: var(--r-full);
+  background: var(--warning);
+  color: var(--on-warning);
+  font: var(--t-micro);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ---- footer --------------------------------------------------------------- */
+
+.footer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--divider);
+  -webkit-app-region: no-drag;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border-radius: var(--r-md);
+}
+
+.statusText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: currentColor;
+}
+
+.statusLabel {
+  font: var(--t-caption);
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statusMeta {
+  font: var(--t-micro);
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.status_neutral .statusDot {
+  color: var(--text-muted);
+}
+.status_success .statusDot {
+  color: var(--success);
+  animation: breathe 2.6s var(--ease-in-out) infinite;
+}
+.status_warning .statusDot {
+  color: var(--warning);
+}
+.status_danger .statusDot {
+  color: var(--danger);
+}
+.status_info .statusDot {
+  color: var(--info);
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 var(--success-tint);
+  }
+  50% {
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+.monitorBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: var(--control-h-md);
+  height: var(--control-h-md);
+  border-radius: var(--r-md);
+  color: var(--text-secondary);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.monitorBtn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.monitorBtn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.utilRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.utilBtn {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 7px 9px;
+  border-radius: var(--r-md);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.utilBtn:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.utilBtnActive {
+  color: var(--brand-text);
+  font-weight: 600;
+}
+
+/* ---- open-source footer ---------------------------------------------------- */
+
+.osRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-top: var(--sp-2);
+  font: var(--t-micro);
+  color: var(--text-muted);
+}
+
+.osLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: color var(--dur-1) var(--ease-out);
+}
+
+.osLink:hover {
+  color: var(--brand);
+  text-decoration: none;
+}
+
+.osStar {
+  color: var(--warning);
+}
+
+.osSep {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.osItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ---- responsive drawer ----------------------------------------------------- */
+
+.scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: var(--scrim);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  animation: scrimIn var(--dur-2) var(--ease-out) both;
+}
+
+@keyframes scrimIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Compact-navigation tier. Must match the `(max-width: 1080px)` query in
+   App.tsx's useMediaQuery, which decides when to render the drawer trigger and
+   apply the `.narrow` shell class. */
+@media (max-width: 1080px) {
+  .scrimVisible {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    z-index: 100;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: var(--sidebar-w);
+    transform: translateX(-102%);
+    transition: transform var(--dur-3) var(--ease-out);
+    box-shadow: var(--elev-4);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border);
+    padding-top: 0;
+  }
+
+  .drawerOpen {
+    transform: none;
+  }
+}

@@ -1,0 +1,231 @@
+/* ---- status summary + filter ---------------------------------------------- */
+
+/* The chips are both the at-a-glance breakdown and the status filter. Uniform
+   and quiet on purpose: the table's pills carry the colour, so the summary
+   never reads as an alarm. */
+.statsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+  padding: var(--sp-2) var(--sp-4);
+  border-bottom: 1px solid var(--divider);
+}
+
+.statChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: var(--r-full);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out);
+}
+
+.statChip:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.statChip[data-active] {
+  background: var(--brand-tint);
+  color: var(--brand-text);
+  font-weight: 600;
+}
+
+.statLabel {
+  white-space: nowrap;
+}
+
+.statCount {
+  font: var(--t-micro);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.statChip[data-active] .statCount {
+  color: inherit;
+  opacity: 0.75;
+}
+
+/* Attention is one step of emphasis — colour on the number, never a banner. */
+.statCount[data-attention] {
+  color: var(--danger-text);
+}
+
+.statChip[data-active] .statCount[data-attention] {
+  color: inherit;
+}
+
+/* ---- toolbar --------------------------------------------------------------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  padding: var(--sp-4) var(--sp-5);
+  border-bottom: 1px solid var(--divider);
+  -webkit-app-region: no-drag;
+}
+
+.search {
+  flex: 1 1 220px;
+  min-width: 180px;
+  max-width: 340px;
+}
+
+/* Pushed to the far end of the toolbar so the filters stay grouped left. */
+.refresh {
+  margin-left: auto;
+}
+
+.tableWrap {
+  padding: var(--sp-5);
+}
+
+/* Dimmed while a page change is in flight. The rows stay on screen instead of
+   collapsing into a spinner: a local query is fast enough that swapping the
+   table out would flash on every click, which reads as the app stuttering. */
+.tableBusy {
+  opacity: 0.5;
+  transition: opacity var(--dur-1) var(--ease-out);
+  pointer-events: none;
+}
+
+/* Quiet strip for moves that landed while the user reads a later page. */
+.newerBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
+  background: var(--brand-tint);
+  border-bottom: 1px solid var(--border-soft);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+}
+
+/* ---- rows ------------------------------------------------------------------ */
+
+/* No full-row danger tint: failed rows are marked by their small pill and the
+   quick Retry action, so a single hiccup never repaints the page. */
+
+.fileCell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.ext {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 22px;
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  font: var(--t-micro);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.fileText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.fileName {
+  font: var(--t-body);
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fileFrom {
+  font: var(--t-caption);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dest {
+  display: block;
+  font: var(--t-mono);
+  color: var(--brand-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rule {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.muted {
+  color: var(--text-muted);
+  font: var(--t-caption);
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+/* Not-undoable marker: a quiet icon with the detail in its tooltip; the
+   drawer spells the reason out for keyboard and screen-reader users. */
+.noUndo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: var(--text-muted);
+  padding-right: 2px;
+}
+
+/* ---- drawer ------------------------------------------------------------------ */
+
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin: 0;
+}
+
+.drawerActions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--divider);
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    align-items: stretch;
+  }
+  .search {
+    max-width: none;
+  }
+}

@@ -1,0 +1,126 @@
+/* Pagination bar: result summary on the left, page controls on the right. */
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  flex-wrap: wrap;
+  padding: var(--sp-3) var(--sp-5);
+  border-top: 1px solid var(--divider);
+  -webkit-app-region: no-drag;
+}
+
+.summary {
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.summary strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.size {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.sizeLabel {
+  font: var(--t-caption);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.pages {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.pages :where(button) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: var(--control-h-sm);
+  padding: 0 var(--sp-2);
+  border-radius: var(--r-xs);
+  /* Explicit, not inherited: the shell's `button` rule resets colour, so a
+     number that picks up the window default renders as flat near-black on the
+     white panel and reads as an unstyled control. */
+  color: var(--text-secondary);
+  font: var(--t-caption);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  background: none;
+  border: none;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-1) var(--ease-out);
+}
+
+.pages :where(button):hover:not(:disabled):not(.pageCurrent) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.pages :where(button):active:not(:disabled):not(.pageCurrent) {
+  background: var(--surface-active);
+}
+
+.pages :where(button):disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Kept in :where() so the state rules below can win at any specificity.
+   --brand-on is white on light and near-black on dark, because a vivid orange
+   only reaches ~3.7:1 behind white text — the theme pair is chosen to clear
+   AA in both. */
+.pages :where(.pageCurrent),
+.pages :where(.pageCurrent):hover:not(:disabled) {
+  background: var(--brand);
+  color: var(--brand-on);
+  box-shadow: var(--elev-1);
+}
+
+.gap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: var(--control-h-sm);
+  /* Dots rather than a glyph: the ellipsis character renders at a different
+     x-height per platform font and reads as a broken label next to tabular
+     figures. */
+  color: var(--text-muted);
+  font: var(--t-caption);
+  letter-spacing: 0.12em;
+  user-select: none;
+}
+
+@media (max-width: 640px) {
+  .bar {
+    justify-content: space-between;
+    gap: var(--sp-2);
+  }
+
+  .controls {
+    gap: var(--sp-2);
+  }
+
+  .sizeLabel {
+    display: none;
+  }
+}

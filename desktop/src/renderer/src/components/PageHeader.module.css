@@ -1,0 +1,58 @@
+/* Page lead block: description, metadata and actions. The page title itself
+   sits in the shell's static top bar, so there is no large in-content title. */
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-6);
+  /* A hairline rule closes the heading block: the lede reads as its own
+     quiet section before the content starts. */
+  padding-bottom: var(--sp-5);
+  border-bottom: 1px solid var(--divider);
+}
+
+/* Nothing to say or show: only actions remain, so no rule either. */
+.header:has(> .actions:last-child) {
+  padding-bottom: 0;
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.text {
+  min-width: 0;
+}
+
+.description {
+  margin: 0;
+  font: var(--t-body);
+  color: var(--text-secondary);
+  max-width: 62ch;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+@media (max-width: 860px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--sp-4);
+  }
+  .actions {
+    flex-wrap: wrap;
+  }
+}

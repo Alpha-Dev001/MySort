@@ -1,0 +1,466 @@
+/* ==========================================================================
+   MySort design system
+   --------------------------------------------------------------------------
+   Single source of truth for colour, type, space, radius, elevation and
+   motion. Every component stylesheet consumes these variables — no component
+   defines its own hex value, shadow or radius.
+
+   Light and dark are both first-class and independently designed; the OS
+   preference selects the theme, and the in-app switch can override it. Fonts
+   are system-resolved on purpose: the app never touches the network.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* -- brand ramp: purple ------------------------------------------------ */
+  --brand-50: #f4f0ff;
+  --brand-100: #ebe3ff;
+  --brand-200: #d9ccff;
+  --brand-300: #bda8ff;
+  --brand-400: #9d7df5;
+  --brand-500: #7f4eec;
+  --brand-600: #6c3ddb;
+  --brand-700: #5b30c4;
+  --brand-800: #4a279f;
+
+  /* The exact product purple. White on #7f4eec clears WCAG AA at 5.0:1, so the
+     same value works as the fill in both themes. */
+  --brand: var(--brand-500);
+  --brand-hover: var(--brand-600);
+  --brand-pressed: var(--brand-700);
+  --brand-on: #ffffff;
+  --brand-tint: var(--brand-50);
+  --brand-tint-hover: var(--brand-100);
+  --brand-text: var(--brand-700);
+  --brand-shadow: rgb(74 39 159 / 0.20);
+  --brand-shadow-hover: rgb(74 39 159 / 0.28);
+  --brand-ring: rgb(127 78 236 / 0.30);
+  --brand-line: var(--brand-200);
+
+  /* -- semantic status ---------------------------------------------------
+     Calm-status policy: cautionary and destructive states never introduce
+     alarm hues — no orange, no red anywhere in light or dark. Both live in
+     the brand ramp: warning takes the lighter mid shade, danger the deepest,
+     so severity is carried by depth instead of colour. Success green and
+     info blue are kept so healthy/active states stay distinct at a glance. */
+  --success: #15803d;
+  --success-tint: #eaf7ef;
+  --success-text: #14612f;
+  --on-success: #ffffff;
+  --warning: var(--brand-600);
+  --warning-tint: rgb(127 78 236 / 0.10);
+  --warning-text: var(--brand-700);
+  --on-warning: #ffffff;
+  --danger: var(--brand-700);
+  --danger-hover: var(--brand-800);
+  --danger-tint: rgb(91 48 196 / 0.10);
+  --danger-text: var(--brand-800);
+  --danger-ring: rgb(91 48 196 / 0.34);
+  --on-danger: #ffffff;
+  --info: #0369a1;
+  --info-tint: #eaf4fb;
+  --info-text: #0c4a6e;
+  --on-info: #ffffff;
+  --neutral-tint: #f0f0f4;
+  --neutral-text: #56555f;
+
+  /* -- surfaces & text ---------------------------------------------------
+     The canvas and the panels share one value: every page therefore starts
+     from exactly the same brightness, and blocks define themselves with
+     borders and elevation instead of a contrasting sheet underneath. The
+     sidebar keeps a separate tint so the furniture reads apart from content. */
+  --bg-app: #ffffff;
+  --sidebar-bg: #f7f7fa;
+  --surface: #ffffff;
+  --surface-sunken: #f0f0f4;
+  --surface-hover: rgb(17 16 28 / 0.045);
+  --surface-active: rgb(17 16 28 / 0.07);
+  --surface-track: rgb(17 16 28 / 0.075);
+
+  --text: #17161f;
+  --text-secondary: #56555f;
+  --text-muted: #6b6a74;
+  --text-inverse: #ffffff;
+
+  --border: rgb(17 16 28 / 0.10);
+  --border-soft: rgb(17 16 28 / 0.06);
+  --border-strong: rgb(17 16 28 / 0.20);
+  --divider: rgb(17 16 28 / 0.075);
+
+  --scrim: rgb(12 11 20 / 0.34);
+  --sunken-shadow: inset 0 1px 2px rgb(17 16 28 / 0.05);
+
+  /* -- glass: overlay surfaces only, where transparency adds real depth --- */
+  --glass-surface: rgb(255 255 255 / 0.86);
+  --glass-border: rgb(17 16 28 / 0.08);
+  --glass-blur: 16px;
+  --glass-saturate: 150%;
+
+  /* -- elevation --------------------------------------------------------- */
+  --elev-1: 0 1px 2px rgb(17 16 28 / 0.05);
+  --elev-2: 0 1px 2px rgb(17 16 28 / 0.05), 0 4px 12px -4px rgb(17 16 28 / 0.09);
+  --elev-3: 0 2px 5px rgb(17 16 28 / 0.06), 0 12px 28px -10px rgb(17 16 28 / 0.14);
+  --elev-4: 0 12px 28px -8px rgb(17 16 28 / 0.16), 0 32px 64px -20px rgb(17 16 28 / 0.22);
+
+  /* -- space ------------------------------------------------------------- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-7: 32px;
+  --sp-8: 40px;
+  --sp-9: 48px;
+
+  /* -- radius: one small scale, used consistently ------------------------ */
+  --r-xs: 6px;
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-xl: 14px;
+  --r-2xl: 16px;
+  --r-full: 999px;
+
+  /* -- typography -------------------------------------------------------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI Variable Text',
+    'Segoe UI', Inter, Roboto, system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', 'Cascadia Mono', ui-monospace, Consolas, monospace;
+
+  /* Four weights only: 400 body, 500 captions/nav, 600 headings/labels, 700 titles. */
+  --t-display: 700 27px/34px var(--font-sans);
+  --t-title: 600 20px/26px var(--font-sans);
+  --t-heading: 600 16px/22px var(--font-sans);
+  --t-headline: 600 14px/20px var(--font-sans);
+  --t-body: 400 14px/21px var(--font-sans);
+  --t-body-strong: 600 14px/21px var(--font-sans);
+  --t-callout: 400 13px/19px var(--font-sans);
+  --t-caption: 500 12px/16px var(--font-sans);
+  --t-label: 600 12px/16px var(--font-sans);
+  --t-micro: 600 11px/14px var(--font-sans);
+  --t-stat: 700 24px/28px var(--font-sans);
+  --t-mono: 400 12px/16px var(--font-mono);
+
+  /* -- motion ------------------------------------------------------------ */
+  --dur-1: 110ms;
+  --dur-2: 180ms;
+  --dur-3: 260ms;
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.5, 0.05, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.28, 0.64, 1);
+
+  /* -- layout ------------------------------------------------------------ */
+  --sidebar-w: 248px;
+  --titlebar-h: 36px;
+  /* Static content-area top bar; the native window controls keep this much
+     of its right end free (three caption buttons at 100%/125% DPI). */
+  --topbar-h: 48px;
+  --window-controls-w: 140px;
+  --content-max: 1140px;
+
+  /* -- canvas grid --------------------------------------------------------
+     Dot grid painted on the content canvas, behind the panels. Panels carry an
+     opaque surface, so the grid only reads in the gutters and never competes
+     with text. Geometry is fixed; only the ink changes between themes, so the
+     rhythm of the page is identical in light and dark. */
+  --grid-step: 22px;
+  --grid-ink: rgb(17 16 28 / 0.13);
+
+  /* Active navigation is a filled primary row — the same treatment as the
+     primary button. It always answers "where am I" and its shadow sits
+     behind content rather than competing with it. */
+  --nav-active-bg: var(--brand);
+  --nav-active-bg-hover: var(--brand-hover);
+  --nav-active-bg-pressed: var(--brand-pressed);
+  --control-h-sm: 30px;
+  --control-h-md: 36px;
+  --control-h-lg: 42px;
+}
+
+/*
+ * Dark tokens are keyed off an explicit attribute rather than
+ * `prefers-color-scheme`, so the in-app Light/Dark switch can override the OS
+ * without a second copy of this block. The theme store always writes
+ * `data-theme` with the resolved value, including when the preference is
+ * "system".
+ *
+ * Dark is designed on its own terms, not inverted: three distinct surface
+ * steps (recessed app / floated panel / deeper well), a soft near-white rather
+ * than pure white, and semantic fills light enough to read on a dark ground.
+ */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Purple is bright enough to carry white text on a dark ground, so the fill
+     stays exactly #7f4eec. It darkens on press rather than lightening, which
+     is what keeps the label above AA at every interaction state. */
+  --brand: var(--brand-500);
+  --brand-hover: var(--brand-600);
+  --brand-pressed: var(--brand-700);
+  --brand-on: #ffffff;
+  --brand-tint: rgb(127 78 236 / 0.16);
+  --brand-tint-hover: rgb(127 78 236 / 0.24);
+  --brand-text: var(--brand-300);
+  --brand-line: rgb(127 78 236 / 0.36);
+  --brand-shadow: rgb(0 0 0 / 0.45);
+  --brand-shadow-hover: rgb(0 0 0 / 0.55);
+  --brand-ring: rgb(127 78 236 / 0.45);
+
+  --success: #4ade80;
+  --success-tint: rgb(74 222 128 / 0.15);
+  --success-text: #bbf7d0;
+  --on-success: #062615;
+  --warning: var(--brand-300);
+  --warning-tint: rgb(127 78 236 / 0.15);
+  --warning-text: var(--brand-200);
+  --on-warning: #241a45;
+  --danger: var(--brand-600);
+  --danger-hover: var(--brand-700);
+  --danger-tint: rgb(127 78 236 / 0.20);
+  --danger-text: var(--brand-300);
+  --danger-ring: rgb(127 78 236 / 0.50);
+  --on-danger: #ffffff;
+  --info: #60a5fa;
+  --info-tint: rgb(96 165 250 / 0.15);
+  --info-text: #bfdbfe;
+  --on-info: #06192e;
+  --neutral-tint: rgb(255 255 255 / 0.07);
+  --neutral-text: #b6b6bf;
+
+  --bg-app: #0c0c10;
+  --sidebar-bg: #111116;
+  --surface: #16161b;
+  --surface-sunken: #0a0a0d;
+  --surface-hover: rgb(255 255 255 / 0.05);
+  --surface-active: rgb(255 255 255 / 0.085);
+  --surface-track: rgb(255 255 255 / 0.10);
+
+  --text: #ececf1;
+  --text-secondary: #a7a7b3;
+  --text-muted: #85858f;
+  --text-inverse: #17161f;
+
+  --border: rgb(255 255 255 / 0.11);
+  --border-soft: rgb(255 255 255 / 0.07);
+  --border-strong: rgb(255 255 255 / 0.22);
+  --divider: rgb(255 255 255 / 0.085);
+
+  --scrim: rgb(0 0 0 / 0.5);
+  --sunken-shadow: inset 0 1px 2px rgb(0 0 0 / 0.35);
+
+  --glass-surface: rgb(18 18 22 / 0.88);
+  --glass-border: rgb(255 255 255 / 0.09);
+
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --elev-2: 0 1px 2px rgb(0 0 0 / 0.4), 0 4px 14px -4px rgb(0 0 0 / 0.5);
+  --elev-3: 0 2px 6px rgb(0 0 0 / 0.5), 0 16px 32px -12px rgb(0 0 0 / 0.6);
+  --elev-4: 0 16px 32px -8px rgb(0 0 0 / 0.6), 0 32px 72px -20px rgb(0 0 0 / 0.72);
+
+  /* The canvas grid is light ink on a near-black ground, so it carries a
+     little more weight here than the white-on-white version above — but not
+     enough to reach the panels. */
+  --grid-ink: rgb(255 255 255 / 0.085);
+
+  --nav-active-bg: var(--brand);
+  --nav-active-bg-hover: var(--brand-hover);
+  --nav-active-bg-pressed: var(--brand-pressed);
+}
+
+/* ==========================================================================
+   Reset
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg-app);
+  color: var(--text);
+  font: var(--t-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow: hidden;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd {
+  margin: 0;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+a {
+  color: var(--brand-text);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+::selection {
+  background: var(--brand-ring);
+  color: var(--text);
+}
+
+/* ==========================================================================
+   Focus — one visible ring everywhere, keyboard only
+   ========================================================================== */
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus {
+  outline: none;
+}
+
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Form control normalisation
+   ========================================================================== */
+
+input,
+select,
+textarea {
+  background: var(--surface);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+}
+
+input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* ==========================================================================
+   Scrollbars — thin and unobtrusive
+   ========================================================================== */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-track) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--surface-track);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--r-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--border-strong);
+}
+
+/* ==========================================================================
+   Shared utilities used across screens
+   ========================================================================== */
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skipLink {
+  position: absolute;
+  left: var(--sp-3);
+  top: -60px;
+  z-index: 200;
+  padding: 10px 16px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--elev-3);
+  font: var(--t-headline);
+  transition: top var(--dur-2) var(--ease-out);
+}
+
+.skipLink:focus-visible {
+  top: var(--sp-3);
+}
+
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   Reduced motion
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

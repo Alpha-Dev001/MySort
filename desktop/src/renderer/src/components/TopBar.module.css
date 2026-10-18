@@ -1,0 +1,81 @@
+/* Static top bar for the content column: page title left, theme switch right.
+   Lives outside the scroll container, so it never moves. */
+
+.bar {
+  position: relative;
+  /* Above the content canvas' dot layer (see App.module.css), which paints
+     after in-flow siblings. */
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  height: var(--topbar-h);
+  padding-left: var(--sp-5);
+  /* The native min/max/close overlay owns this corner, so our controls keep
+     their distance instead of fighting it for clicks. */
+  padding-right: calc(var(--window-controls-w) + var(--sp-3));
+  border-bottom: 1px solid var(--divider);
+  /* Frameless window: the furniture strip is the drag region. */
+  -webkit-app-region: drag;
+  transition: border-color var(--dur-2) var(--ease-out);
+}
+
+.left {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font: var(--t-title);
+  color: var(--text);
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-shrink: 0;
+}
+
+/* Interactive children must not drag the window. */
+.right *,
+.drawerBtn {
+  -webkit-app-region: no-drag;
+}
+
+.drawerBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 11px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--elev-1);
+  font: var(--t-caption);
+  color: var(--text-secondary);
+  transition: background-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+
+.drawerBtn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+}
+
+@media (max-width: 700px) {
+  .drawerBtn span {
+    display: none;
+  }
+  .drawerBtn {
+    padding: 0 9px;
+  }
+}

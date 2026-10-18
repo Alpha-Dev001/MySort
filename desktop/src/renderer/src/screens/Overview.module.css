@@ -1,0 +1,134 @@
+/* Overview — stat row, recent activity, watched folders. */
+
+/* Four-up summary row. Two columns once the page drops to its compact tier:
+   a lone fourth tile below three would read as an unfinished row. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-4);
+}
+
+@media (max-width: 1080px) {
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Context line next to the monitoring pill in the page header. */
+.metaText {
+  font: var(--t-caption);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.01em;
+}
+
+/* ---- watched folders -------------------------------------------------------- */
+
+.folderList {
+  display: flex;
+  flex-direction: column;
+}
+
+.folderRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 9px 0;
+  min-width: 0;
+}
+
+.folderList li + li .folderRow {
+  border-top: 1px solid var(--divider);
+}
+
+.folderIcon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.folderPath {
+  flex: 1;
+  min-width: 0;
+  font: var(--t-mono);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.folderPending {
+  flex-shrink: 0;
+  font: var(--t-caption);
+  color: var(--brand-text);
+}
+
+/* ---- activity table ------------------------------------------------------ */
+
+.fileCell {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  min-width: 0;
+}
+
+.ext {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 30px;
+  height: 22px;
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  font: var(--t-micro);
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.fileName {
+  font: var(--t-body);
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+.destCell {
+  font: var(--t-mono);
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
+.muted {
+  color: var(--text-muted);
+  font: var(--t-caption);
+  white-space: nowrap;
+}
+
+.footnote {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: calc(var(--sp-2) * -1);
+  font: var(--t-caption);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.footnote svg {
+  flex-shrink: 0;
+  color: var(--brand);
+}
+
+@media (max-width: 700px) {
+  .footnote {
+    text-align: start;
+  }
+}
