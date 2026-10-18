@@ -47,8 +47,8 @@ type Range = '7' | '30' | '90' | 'all'
 
 const RANGE_DAYS: Record<Range, number | null> = { '7': 7, '30': 30, '90': 90, all: null }
 
-const DEFAULT_PAGE_SIZE = 10
-const PAGE_SIZES = [10, 25, 50, 100]
+const DEFAULT_PAGE_SIZE = 6
+const PAGE_SIZES = [6, 12, 24, 48]
 
 const HistoryScreen: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNavigate }) => {
   const toast = useToast()
@@ -72,11 +72,19 @@ const HistoryScreen: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNa
   const [newerCount, setNewerCount] = useState(0)
 
   const tableRef = useRef<HTMLDivElement>(null)
+  /**
+   * Rivals only itself: every `load` call takes the next number, and a response
+   * that no longer matches it was sent for a page/filter we have already left
+   * (fast paging, typed-then-pasted searches). Without this, the slower of two
+   * racing requests overwrites the newer page's rows.
+   */
+  const requestSeq = useRef(0)
 
   const load = useCallback(
     async (opts: { silent?: boolean } = {}) => {
       if (opts.silent) setRefreshing(true)
       else setLoading(true)
+      const seq = ++requestSeq.current
 
       const res = await api.history.list({
         query: debouncedQuery.trim() || undefined,
@@ -86,6 +94,10 @@ const HistoryScreen: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNa
         limit: pageSize,
       })
 
+      // A newer request superseded this one: drop the result wholesale and let
+      // it own both the loading flags and the table.
+      if (seq !== requestSeq.current) return
+
       if (res.ok) {
         const data = res.data as HistoryPage
         // The page we asked for can stop existing: retention prunes old rows, or
@@ -94,10 +106,10 @@ const HistoryScreen: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNa
         const lastPage = Math.max(1, Math.ceil(data.total / pageSize))
         if (pageIndex > lastPage) {
           setPageIndex(lastPage)
-        } else {
-          setPage(data)
-          setError(null)
+          return
         }
+        setPage(data)
+        setError(null)
       } else {
         setError(res.error.message)
       }
@@ -453,7 +465,7 @@ const HistoryScreen: React.FC<{ onNavigate?: (route: Route) => void }> = ({ onNa
                 rowKey={(op) => op.id}
                 onRowClick={(op) => setDetail(op)}
                 maxHeight="min(64vh, 560px)"
-                resetScrollKey={`${pageIndex}-${status}-${range}-${debouncedQuery}`}
+                resetScrollKey={`${pageIndex}-${pageSize}-${status}-${range}-${debouncedQuery}`}
                 empty={
                   <EmptyState
                     icon={<FolderOpen size={17} />}

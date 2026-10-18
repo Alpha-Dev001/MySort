@@ -339,7 +339,7 @@ export class Orchestrator {
       sortedToday: this.deps.repos.operations.countCompletedSince(midnight.toISOString()),
       waiting: candidates.filter((c) => c.state === 'waiting' || c.state === 'ready').length,
       needsAttention: this.deps.repos.operations.countAttention(),
-      recent: this.deps.repos.operations.list({ limit: 6 }).items,
+      recent: this.deps.repos.operations.list({ limit: 5 }).items,
       monitoring: this.status(),
       recovery: this.lastRecovery,
     }
