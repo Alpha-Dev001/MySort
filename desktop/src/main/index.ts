@@ -159,6 +159,7 @@ async function main(): Promise<void> {
 
   const settings = settingsService.get()
   if (settings.resumeMonitoringOnLaunch) {
+    // Settle anything a previous run left half-finished before watching again.
     const summary = await orchestrator.runRecovery()
     if (summary.checked > 0 || summary.needsReview > 0) {
       showMainWindow()

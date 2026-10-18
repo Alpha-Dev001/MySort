@@ -15,7 +15,10 @@ import type {
   MonitoringStatus,
   MonitoredFolder,
   OperationResult,
+  OrganizationPlan,
   OverviewStats,
+  PreviewApplyResult,
+  RecoverySummary,
   RuleTestResult,
   UndoResult,
 } from '../shared/types'
@@ -45,6 +48,7 @@ import { logger } from './logger'
 export interface OrchestratorEvents {
   monitoringStatus(status: MonitoringStatus): void
   operationUpdated(op: FileOperation): void
+  recoverySummary(summary: RecoverySummary): void
   rulesChanged(): void
   settingsChanged(s: ApplicationSettings): void
   notify(kind: 'failure' | 'summary', title: string, body: string): void
@@ -76,16 +80,26 @@ interface FolderRuntime {
 
 const LEDGER_TTL_MS = 60 * 1000
 const PLAN_APPLY_STABILITY_MS = 800
+/** How long a built plan stays applyable. After this the user must re-preview. */
+const PLAN_TTL_MS = 30 * 60 * 1000
+
+interface CachedPlan {
+  plan: OrganizationPlan
+  createdAtMs: number
+}
 
 export class Orchestrator {
   private readonly readiness: ReadinessChecker
   private readonly runtimes = new Map<number, FolderRuntime>()
   private readonly recentlyMoved = new Map<string, number>()
+  /** Plans awaiting approval, keyed by planId and dropped after PLAN_TTL_MS. */
+  private readonly plans = new Map<string, CachedPlan>()
   private state: 'stopped' | 'starting' | 'running' | 'paused' | 'error' = 'stopped'
   private since: string | null = null
   private disposed = false
   private statusEmitScheduled = false
   private retentionTimer: ReturnType<typeof setInterval> | null = null
+  private lastRecovery: RecoverySummary | null = null
 
   constructor(private readonly deps: OrchestratorDeps) {
     this.readiness = new ReadinessChecker(deps.fs, {
@@ -126,6 +140,38 @@ export class Orchestrator {
     if (result.deleted > 0 || result.expired > 0) {
       logger.info(`retention: deleted ${result.deleted}, expired ${result.expired}`)
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Recovery
+  // ------------------------------------------------------------------
+
+  /**
+   * Resolves moves that were interrupted by a crash or a forced quit. Runs
+   * before monitoring resumes so a half-finished move is settled first.
+   *
+   * Recovery only ever inspects operations the journal already knows about. It
+   * never scans the disk for unrecognised files and never deletes anything it
+   * has not proven identical to its destination.
+   */
+  async runRecovery(): Promise<RecoverySummary> {
+    const summary = await recoverUnfinished({
+      fs: this.deps.fs,
+      journal: this.deps.repos.operations,
+    })
+    this.lastRecovery = summary.checked > 0 ? summary : null
+    if (summary.checked > 0) {
+      logger.warn(
+        `recovery: checked ${summary.checked}, recovered ${summary.recovered}, needs review ${summary.needsReview}`
+      )
+      this.deps.events.recoverySummary(summary)
+    }
+    return summary
+  }
+
+  /** Clears the startup recovery banner once the user has seen it. */
+  dismissRecovery(): void {
+    this.lastRecovery = null
   }
 
   // ------------------------------------------------------------------

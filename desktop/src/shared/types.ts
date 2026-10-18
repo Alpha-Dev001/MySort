@@ -144,6 +144,23 @@ export interface PlannedMove {
 
 export type PlanWarning = 'NAME_CONFLICT_WILL_RENAME' | 'CROSS_VOLUME' | 'DEST_FOLDER_WILL_BE_CREATED'
 
+export interface SkippedPlanItem {
+  fileName: string
+  /** A `SkipReason`, an `ErrorCode`, or 'NOT_READY' / 'NO_EXTENSION'. */
+  reason: string
+}
+
+/** One read-only pass over a monitored folder: what would happen, and what would not. */
+export interface OrganizationPlan {
+  /** Opaque id; preview:apply takes these item ids instead of paths. */
+  planId: string
+  folderId: number
+  folderPath: string
+  createdAt: string
+  items: PlannedMove[]
+  skipped: SkippedPlanItem[]
+}
+
 // ---------------------------------------------------------------------------
 // Operations / history
 // ---------------------------------------------------------------------------
@@ -173,6 +190,13 @@ export interface OperationResult {
   status: 'completed' | 'failed' | 'skipped' | 'needs_review'
   finalDestPath?: string
   error?: AppError
+}
+
+/** Outcome of applying the approved subset of one plan. */
+export interface PreviewApplyResult {
+  /** Groups every move made by a single apply so history can batch them. */
+  batchId: string
+  results: OperationResult[]
 }
 
 export interface UndoResult {
@@ -246,7 +270,7 @@ export interface ApplicationSettings {
 }
 
 // ---------------------------------------------------------------------------
-// App info, overview, recovery
+// App info
 // ---------------------------------------------------------------------------
 
 export interface AppInfo {
@@ -259,9 +283,39 @@ export interface AppInfo {
 
 export interface OverviewStats {
   sortedToday: number
+  /** Files finished and waiting for a decision or for auto mode to act. */
+  waiting: number
   needsAttention: number
   recent: FileOperation[]
   monitoring: MonitoringStatus
+  /** Set at startup when an interrupted move had to be resolved. */
+  recovery: RecoverySummary | null
+}
+
+// ---------------------------------------------------------------------------
+// Recovery
+// ---------------------------------------------------------------------------
+
+export type RecoveryOutcome = 'completed' | 'failed' | 'needs_review'
+
+export interface RecoveryItem {
+  operationId: string
+  fileName: string
+  sourcePath: string
+  destPath: string
+  outcome: RecoveryOutcome
+  /** Plain-English account of what was found and what was done. */
+  note: string
+}
+
+export interface RecoverySummary {
+  ranAt: string
+  /** Unfinished operations found in the journal. */
+  checked: number
+  recovered: number
+  failed: number
+  needsReview: number
+  items: RecoveryItem[]
 }
 
 // ---------------------------------------------------------------------------

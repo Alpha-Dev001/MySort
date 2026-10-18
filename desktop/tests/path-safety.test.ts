@@ -81,13 +81,29 @@ describe('validateDestination integration', () => {
   })
 
   it('rejects a destination inside a monitored folder', async () => {
-    const ctx2 = { ...destinationContext, monitoredFolders: [{ id: 1, path: 'C:\\Users\\Alex\\Downloads', enabled: true }] }
-    const result = await validateDestination('absolute', 'C:\\Users\\Alex\\Downloads\\photo.png', ctx2)
-    if (result.ok) {
-      // If the monitored folder doesn't exist at the target location, the system may still accept it.
-    } else {
-      expect(result.code).toBe('DEST_LOOP')
+    // The loop check only runs once the deny list has passed, so this fixture
+    // deliberately keeps the watched folder OUT of denyPaths. Otherwise the
+    // deny list would short-circuit first and the loop rule would never run.
+    const ctx2 = {
+      ...destinationContext,
+      denyPaths: ['C:\\Windows', 'C:\\Program Files'],
+      monitoredFolders: [{ id: 1, path: 'C:\\Users\\Alex\\Downloads', enabled: true }],
     }
+    const result = await validateDestination('absolute', 'C:\\Users\\Alex\\Downloads\\photo.png', ctx2)
+    expect(result.ok).toBe(false)
+    expect((result as any).code).toBe('DEST_LOOP')
+  })
+
+  it('reports the deny list before the loop rule when both would match', async () => {
+    // A location that is both protected and inside a watched folder is denied;
+    // the specific reason matters less than the fact that it is refused.
+    const ctx = {
+      ...destinationContext,
+      monitoredFolders: [{ id: 1, path: 'C:\\Users\\Alex\\Downloads', enabled: true }],
+    }
+    const result = await validateDestination('absolute', 'C:\\Users\\Alex\\Downloads\\photo.png', ctx)
+    expect(result.ok).toBe(false)
+    expect((result as any).code).toBe('PATH_DENIED')
   })
 
   it('rejects a circular destination (source == destination)', async () => {
@@ -100,6 +116,9 @@ describe('validateDestination integration', () => {
   it('rejects a destination inside another monitored folder (loop prevention)', async () => {
     const ctx4 = {
       ...destinationContext,
+      // As above: keep the watched folders off the deny list so the loop rule
+      // is what is actually under test.
+      denyPaths: ['C:\\Windows', 'C:\\Program Files'],
       monitoredFolders: [
         { id: 1, path: 'C:\\Users\\Alex\\Downloads', enabled: true },
         { id: 2, path: 'C:\\Users\\Alex\\Downloads\\Subfolder', enabled: true },

@@ -174,7 +174,7 @@ const Shell = (): React.ReactElement => {
         onToggleMonitoring={() => void toggleMonitoring()}
         drawerOpen={drawerOpen}
         onCloseDrawer={() => setDrawerOpen(false)}
-        githubUrl="https://github.com/alphamnzr/mysort"
+        githubUrl="https://github.com/Alpha-Dev001/MySort"
         version={version || '0.1.0'}
       />
 

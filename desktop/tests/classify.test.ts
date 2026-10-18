@@ -21,12 +21,12 @@ describe('classify', () => {
 
   describe('categoryFolderName', () => {
     it('returns the human category folder name', () => {
-      expect(categoryFolderName('images')).toBe('Pictures')
+      expect(categoryFolderName('images')).toBe('Images')
       expect(categoryFolderName('videos')).toBe('Videos')
       expect(categoryFolderName('documents')).toBe('Documents')
-      expect(categoryFolderName('audio')).toBe('Music')
+      expect(categoryFolderName('audio')).toBe('Audio')
       expect(categoryFolderName('archives')).toBe('Archives')
-      expect(categoryFolderName('other')).toBe('Files')
+      expect(categoryFolderName('other')).toBe('Other')
     })
   })
 
@@ -77,11 +77,17 @@ describe('classify', () => {
       expect(c('setup.exe').category).toBe('other')
       expect(c('script.py').category).toBe('other')
       expect(c('data.bin').category).toBe('other')
-      expect(c('noext').category).toBe('other')
+      expect(c('archive.xyzzy').category).toBe('other')
     })
 
     it('returns null category for files with no extension', () => {
-      expect(c('README').category).toBe('other')
+      // No extension means nothing to classify on. resolveRule turns this into
+      // a `no_action` and leaves the file exactly where it is, rather than
+      // guessing a category out of nothing.
+      expect(c('README').category).toBeNull()
+      expect(c('noext').category).toBeNull()
+      expect(c('Makefile').category).toBeNull()
+      expect(c('LICENSE').matchedSuffix).toBeNull()
     })
 
     it('is case-insensitive', () => {

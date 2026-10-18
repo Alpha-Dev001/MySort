@@ -1,7 +1,6 @@
 import React from 'react'
 import {
   FolderOpen,
-  GitBranch,
   LayoutDashboard,
   ListChecks,
   Pause,
@@ -11,6 +10,7 @@ import {
   Star,
   History as HistoryIcon,
 } from 'lucide-react'
+import GithubMark from './GithubMark'
 import type { Route } from '../routes'
 import type { MonitoringState } from '../../../shared/types'
 import { monitoringLabel, monitoringTone } from '../lib/format'
@@ -176,10 +176,11 @@ const Sidebar: React.FC<SidebarProps> = ({
               href={githubUrl}
               target="_blank"
               rel="noopener noreferrer"
-              title="View source code on GitHub"
+              title={`View the source code on GitHub — ${githubUrl}`}
+              aria-label="View MySort on GitHub"
             >
-              <GitBranch size={13} />
-              <span>Open Source</span>
+              <GithubMark size={13} />
+              <span>GitHub</span>
               <Star size={11} className={styles.osStar} />
             </a>
             <span className={styles.osSep} aria-hidden="true">·</span>
