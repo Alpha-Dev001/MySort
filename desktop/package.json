@@ -9,7 +9,8 @@
   "main": "out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build": "electron-vite build && node scripts/copy-assets.mjs",
+    "icons": "node scripts/generate-icons.mjs",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p src/renderer/tsconfig.json",
     "lint": "eslint .",

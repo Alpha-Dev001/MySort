@@ -43,6 +43,18 @@ if (!gotLock) {
   void main()
 }
 
+/** Launched at login with `--hidden`: the window stays hidden, only the tray appears. */
+const launchedHidden = process.argv.includes('--hidden')
+
+/** Register/unregister the login item. Idempotent; use for both toggles and boot sync. */
+function syncLoginItem(startWithWindows: boolean): void {
+  app.setLoginItemSettings({
+    openAtLogin: startWithWindows,
+    path: process.execPath,
+    args: process.defaultApp ? [pathToFileURL(process.argv[1] ?? '').href] : ['--hidden'],
+  })
+}
+
 async function main(): Promise<void> {
   app.setAppUserModelId('com.mysort.desktop')
 
@@ -68,7 +80,7 @@ async function main(): Promise<void> {
   const settingsRepo = new SettingsRepo(db)
   const foldersRepo = new FoldersRepo(db)
   const operationsRepo = new OperationsRepo(db)
-  const defaultRoot = path.join(app.getPath('documents'), 'MySort')
+  const defaultRoot = app.getPath('downloads')
 
   settingsService = new SettingsService(settingsRepo, { destinationRoot: defaultRoot })
   const rulesService = new RulesService(
@@ -116,6 +128,17 @@ async function main(): Promise<void> {
       },
     },
   })
+
+  // First install: seed Downloads as the watched folder (sort in place) so the
+  // user does not have to pick a folder, and mark onboarding complete.
+  if (foldersRepo.list().length === 0) {
+    try {
+      foldersRepo.insert({ path: app.getPath('downloads'), mode: 'auto', autoSince: null })
+      settingsService.update({ onboardingCompleted: true })
+    } catch (e) {
+      logger.warn(`first-install seed failed: ${(e as Error).message}`)
+    }
+  }
 
   registerIpcHandlers({
     orchestrator,
@@ -167,7 +190,12 @@ async function main(): Promise<void> {
     void orchestrator.startMonitoring()
   }
 
-  createAndLoadWindow(settingsService)
+  // "Always start with the computer" is the default; the login item only
+  // exists if something actually registered it, so boot syncs it too. Dev runs
+  // must not claim the login item themselves.
+  if (settings.startWithWindows && !process.defaultApp) syncLoginItem(true)
+
+  createAndLoadWindow(settingsService, !launchedHidden)
 
   app.on('second-instance', () => showMainWindow())
   app.on('activate', () => showMainWindow())
@@ -186,8 +214,8 @@ async function main(): Promise<void> {
   })
 }
 
-function createAndLoadWindow(settingsSvc: SettingsService): void {
-  mainWindow = createMainWindow()
+function createAndLoadWindow(settingsSvc: SettingsService, show = true): void {
+  mainWindow = createMainWindow(show)
   mainWindow.on('close', (event) => {
     const behavior = (settingsSvc?.get().closeButtonBehavior) ?? 'tray'
     if (!quitting && behavior === 'tray') {
@@ -216,11 +244,7 @@ function applySettingsSideEffects(next: ApplicationSettings, previous: Applicati
     configureLogging(next.logLevel)
   }
   if (next.startWithWindows !== previous.startWithWindows) {
-    app.setLoginItemSettings({
-      openAtLogin: next.startWithWindows,
-      path: process.execPath,
-      args: process.defaultApp ? [pathToFileURL(process.argv[1] ?? '').href] : ['--hidden'],
-    })
+    syncLoginItem(next.startWithWindows)
   }
   void orchestrator?.refreshMonitors().catch((e: unknown) => {
     logger.warn(`monitor refresh failed: ${(e as Error).message}`)

@@ -11,6 +11,7 @@ import {
   History as HistoryIcon,
 } from 'lucide-react'
 import GithubMark from './GithubMark'
+import Logo from './Logo'
 import type { Route } from '../routes'
 import type { MonitoringState } from '../../../shared/types'
 import { monitoringLabel, monitoringTone } from '../lib/format'
@@ -87,13 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       >
         <div className={styles.brand}>
           <span className={styles.mark} aria-hidden="true">
-            <svg viewBox="0 0 32 32" width="18" height="18">
-              <path
-                d="M6 9.5A2.5 2.5 0 0 1 8.5 7h4.2c.6 0 1.2.23 1.64.63L15.8 9.5h7.7A2.5 2.5 0 0 1 26 12v10.5a2.5 2.5 0 0 1-2.5 2.5h-15A2.5 2.5 0 0 1 6 22.5z"
-                fill="currentColor"
-              />
-              <rect x="11" y="14.5" width="10" height="7" rx="1.6" fill="var(--brand-cut)" />
-            </svg>
+            <Logo size={36} />
           </span>
           <span className={styles.brandName}>MySort</span>
         </div>

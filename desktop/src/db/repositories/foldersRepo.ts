@@ -24,6 +24,7 @@ interface RawFolderRow {
   last_reconciled_at: string | null
   created_at: string
   updated_at: string
+  parent_dirs_json: string | null
 }
 
 function mapFolder(r: RawFolderRow): FolderRow {
@@ -42,8 +43,10 @@ function mapFolder(r: RawFolderRow): FolderRow {
 export class FoldersRepo {
   constructor(private readonly db: Database.Database) {}
 
+  private readonly select = `SELECT * FROM monitored_folders`
+
   list(): FolderRow[] {
-    const rows = this.db.prepare(`SELECT * FROM monitored_folders ORDER BY id`).all() as RawFolderRow[]
+    const rows = this.db.prepare(`${this.select} ORDER BY id`).all() as RawFolderRow[]
     return rows.map(mapFolder)
   }
 
@@ -52,21 +55,25 @@ export class FoldersRepo {
   }
 
   get(id: number): FolderRow | null {
-    const row = this.db.prepare(`SELECT * FROM monitored_folders WHERE id = ?`).get(id) as
-      | RawFolderRow
-      | undefined
+    const row = this.db.prepare(`${this.select} WHERE id = ?`).get(id) as RawFolderRow | undefined
     return row ? mapFolder(row) : null
   }
 
-  insert(input: { path: string; mode: FolderMode }): FolderRow {
+  insert(input: { path: string; mode: FolderMode; autoSince?: string | null }): FolderRow {
     const now = new Date().toISOString()
+    const autoSince =
+      input.autoSince !== undefined
+        ? input.autoSince
+        : input.mode === 'auto'
+          ? now
+          : null
     try {
       const result = this.db
         .prepare(
           `INSERT INTO monitored_folders (path, enabled, mode, auto_since, created_at, updated_at)
            VALUES (?, 1, ?, ?, ?, ?)`
         )
-        .run(input.path, input.mode, input.mode === 'auto' ? now : null, now, now)
+        .run(input.path, input.mode, autoSince, now, now)
       return this.get(Number(result.lastInsertRowid)) as FolderRow
     } catch (e) {
       if ((e as NodeJS.ErrnoException).code === 'SQLITE_CONSTRAINT_UNIQUE') {
@@ -96,6 +103,51 @@ export class FoldersRepo {
 
   remove(id: number): void {
     this.db.prepare(`DELETE FROM monitored_folders WHERE id = ?`).run(id)
+  }
+
+  /**
+   * Rename tracking: the folder row (and its id) survives renames and moves,
+   * so history, rules, and the auto timestamp keep working. Windows paths are
+   * case-insensitive, hence COLLATE NOCASE on the unique column.
+   */
+  updatePath(id: number, nextPath: string): FolderRow {
+    const now = new Date().toISOString()
+    try {
+      this.db
+        .prepare(
+          `UPDATE monitored_folders SET path = ?, updated_at = ? WHERE id = ?`
+        )
+        .run(nextPath, now, id)
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === 'SQLITE_CONSTRAINT_UNIQUE') {
+        throw appError(
+          'CONFLICT',
+          'another watched folder already uses this path'
+        )
+      }
+      throw e
+    }
+    return this.get(id) as FolderRow
+  }
+
+  /** Subfolder names of the watched folder's parent, as last seen on a scan. */
+  getParentDirs(id: number): string[] | null {
+    const row = this.db
+      .prepare(`SELECT parent_dirs_json FROM monitored_folders WHERE id = ?`)
+      .get(id) as { parent_dirs_json: string | null } | undefined
+    if (!row?.parent_dirs_json) return null
+    try {
+      const parsed = JSON.parse(row.parent_dirs_json) as unknown
+      return Array.isArray(parsed) ? (parsed.filter((n): n is string => typeof n === 'string')) : null
+    } catch {
+      return null
+    }
+  }
+
+  setParentDirs(id: number, names: string[]): void {
+    this.db
+      .prepare(`UPDATE monitored_folders SET parent_dirs_json = ? WHERE id = ?`)
+      .run(JSON.stringify(names), id)
   }
 
   touchReconciled(id: number): void {

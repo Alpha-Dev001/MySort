@@ -213,19 +213,20 @@ export class ReadinessChecker {
         this.events.onGone(c.key, c.path)
         continue
       }
-      if (!stat.isFile || stat.isSymlink || stat.size === 0) {
+      const isDir = stat.isDirectory && !stat.isSymlink
+      if (isDir) {
+        // Folders: stability is based on mtime only (size is meaningless for
+        // directories). A folder being filled keeps changing mtime and never
+        // becomes ready until the writes settle.
+        stat = { ...stat, size: 0 }
+      } else if (!stat.isFile || stat.isSymlink || stat.size === 0) {
+        // Not a regular file: a symlink, a socket, or an empty file. None of
+        // them are ever moved, so the candidate is dropped and the reason is
+        // reported. (Directories never reach this branch — they are handled
+        // above, and `checkStatEligibility` reports them as eligible.)
         const skip = checkStatEligibility(stat)
         this.candidates.delete(c.key)
-        if (!skip.eligible) {
-          if (skip.reason !== 'DIRECTORY') {
-            this.events.onSkipped(c.path, c.fileName, skip.reason)
-          } else {
-            // Still being created; keep waiting instead of skipping.
-            await this.add(c.path, c.fileName)
-            // Still being created; keep waiting instead of skipping.
-            await this.add(c.path, c.fileName)
-          }
-        }
+        if (!skip.eligible) this.events.onSkipped(c.path, c.fileName, skip.reason)
         continue
       }
       const changed =

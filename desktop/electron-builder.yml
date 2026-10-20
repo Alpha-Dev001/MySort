@@ -11,6 +11,9 @@ asarUnpack:
 npmRebuild: true
 artifactName: MySort-Setup.exe
 win:
+  # Generated from logo.svg by scripts/generate-icons.mjs; the .ico carries
+  # 16..256 px so the shell picks the right size for the taskbar, the installer
+  # list and the Start menu.
   icon: assets/icon.ico
   target:
     - target: nsis

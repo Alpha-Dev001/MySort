@@ -416,7 +416,7 @@ export async function executeOperation(
   // Final verification.
   deps.hooks?.afterStep?.('verified')
   const destStat = await fs.lstat(finalPath).catch(() => null)
-  if (!destStat || destStat.size !== input.fingerprint.size) {
+  if (!destStat || (!destStat.isDirectory && destStat.size !== input.fingerprint.size)) {
     return finish({
       status: 'needs_review',
       finalDestPath: finalPath,

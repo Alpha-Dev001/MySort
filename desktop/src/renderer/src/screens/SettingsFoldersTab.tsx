@@ -25,6 +25,14 @@ const FoldersTab: React.FC<{
   onSetFolderMode,
   onPickDestinationRoot,
 }) => {
+  const watchedContainsDestination = folders.some((f) => {
+    const fp = f.path.toLowerCase().replace(/[\\/]+$/, '')
+    const rp = settings.destinationRoot.toLowerCase().replace(/[\\/]+$/, '')
+    // Equal paths are the intended "sort in place" setup, not a conflict.
+    if (fp === rp) return false
+    return rp.startsWith(fp + '\\') || fp.startsWith(rp + '\\')
+  })
+
   return (
     <>
       <Section
@@ -100,6 +108,14 @@ const FoldersTab: React.FC<{
           </Button>
         </FieldRow>
       </Section>
+
+      {watchedContainsDestination && (
+        <Notice tone="warning" icon={<FolderOpen size={15} />}>
+          A watched folder and the destination root overlap (one contains the other). MySort cannot sort a folder's
+          contents into a subfolder of itself, so files in the overlapping part will stay put. Use the same path for
+          both to sort in place, or pick a destination outside the watched folder.
+        </Notice>
+      )}
 
       <Notice tone="info" icon={<FolderOpen size={15} />}>
         MySort only looks at loose files directly inside a watched folder — never inside subfolders, and never at

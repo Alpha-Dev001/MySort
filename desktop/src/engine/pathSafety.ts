@@ -202,6 +202,10 @@ export interface DestinationContext {
   reader: FsReader
   /** Absolute root that relative destinations resolve under. */
   destinationRoot: string
+  /** Whether top-level folders are sorted into a "Folders" bucket. */
+  sortFolders?: boolean
+  /** Top-level names that are destination subfolders; never sort these as candidates. */
+  destinationSubfolders?: string[]
   monitoredFolders: { id: number; path: string; enabled: boolean }[]
   /** The watched folder the file came from, when known (preview/executor). */
   sourceFolderId?: number | null
@@ -227,6 +231,18 @@ export async function validateDestination(
   const root = path.parse(absolute).root
   if (!(await ctx.reader.exists(root))) {
     return badPath('DEST_UNAVAILABLE', `drive ${root.trim()} is not available`)
+  }
+
+  /**
+   * The destination root must exist before a destination inside it passes.
+   * Without this, moving a file after the user renamed the destination folder
+   * would recreate the old folder tree from nothing. Rename tracking is what
+   * updates the root; until it does, nothing may be written under the old one.
+   */
+  const rootNorm = normalizePath(ctx.destinationRoot)
+  const absNorm = normalizePath(absolute)
+  if ((pathsEqual(absNorm, rootNorm) || isInside(absNorm, rootNorm)) && !(await ctx.reader.exists(rootNorm))) {
+    return badPath('DEST_UNAVAILABLE', 'the destination folder is currently not available')
   }
 
   const real = await resolveRealPath(ctx.reader, absolute)
@@ -298,10 +314,21 @@ export function checkNameEligibility(fileName: string): Eligibility {
   return { eligible: true }
 }
 
-/** Eligibility from an lstat result (type-level checks). */
+const DANGEROUS_DIR_NAMES = new Set([
+  'node_modules', '.git', '.svn', '.hg', '__pycache__', '.venv', 'venv',
+  '$recycle.bin', 'system volume information',
+])
+
+/** Names that must never be auto-sorted as folders (system/app folders). */
+export function isDangerousDirName(name: string): boolean {
+  const lower = name.toLowerCase()
+  if (lower.startsWith('.')) return true
+  return DANGEROUS_DIR_NAMES.has(lower)
+}
+
 export function checkStatEligibility(stat: FileStat): Eligibility {
   if (stat.isSymlink) return { eligible: false, reason: 'SYMLINK' }
-  if (stat.isDirectory) return { eligible: false, reason: 'DIRECTORY' }
+  if (stat.isDirectory) return { eligible: true }
   if (!stat.isFile) return { eligible: false, reason: 'NOT_FILE' }
   if (stat.size === 0) return { eligible: false, reason: 'ZERO_SIZE' }
   return { eligible: true }

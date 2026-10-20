@@ -14,6 +14,7 @@ export const SETTINGS_KEYS = {
   resumeMonitoringOnLaunch: 'resumeMonitoringOnLaunch',
   notifications: 'notifications',
   previewBeforeAuto: 'previewBeforeAuto',
+  sortFolders: 'sortFolders',
   historyRetentionDays: 'historyRetentionDays',
   undoWindowDays: 'undoWindowDays',
   logLevel: 'logLevel',
@@ -31,11 +32,17 @@ export class SettingsService {
     const r = this.repo
     return {
       destinationRoot: r.getString(SETTINGS_KEYS.destinationRoot, this.defaults.destinationRoot),
-      startWithWindows: r.getBool(SETTINGS_KEYS.startWithWindows, false),
+      // The application sorts downloads in the background; it starts with the
+      // computer by default and can be turned off in settings.
+      startWithWindows: r.getBool(SETTINGS_KEYS.startWithWindows, true),
       closeButtonBehavior: r.getString(SETTINGS_KEYS.closeButtonBehavior, 'tray') as CloseButtonBehavior,
       resumeMonitoringOnLaunch: r.getBool(SETTINGS_KEYS.resumeMonitoringOnLaunch, true),
       notifications: r.getString(SETTINGS_KEYS.notifications, 'failures') as NotificationPreference,
       previewBeforeAuto: r.getBool(SETTINGS_KEYS.previewBeforeAuto, false),
+      // Moving whole folders is the riskiest thing MySort can do on its own,
+      // so it is opt-in. Users who explicitly turn it on keep that choice:
+      // only the fallback for "never configured" changes here.
+      sortFolders: r.getBool(SETTINGS_KEYS.sortFolders, false),
       historyRetentionDays: r.getNumber(SETTINGS_KEYS.historyRetentionDays, 90),
       undoWindowDays: r.getNumber(SETTINGS_KEYS.undoWindowDays, 30),
       logLevel: r.getString(SETTINGS_KEYS.logLevel, 'info') as LogLevel,
@@ -52,6 +59,7 @@ export class SettingsService {
     if (patch.resumeMonitoringOnLaunch !== undefined) entries.push([SETTINGS_KEYS.resumeMonitoringOnLaunch, patch.resumeMonitoringOnLaunch])
     if (patch.notifications !== undefined) entries.push([SETTINGS_KEYS.notifications, patch.notifications])
     if (patch.previewBeforeAuto !== undefined) entries.push([SETTINGS_KEYS.previewBeforeAuto, patch.previewBeforeAuto])
+    if (patch.sortFolders !== undefined) entries.push([SETTINGS_KEYS.sortFolders, patch.sortFolders])
     if (patch.historyRetentionDays !== undefined) entries.push([SETTINGS_KEYS.historyRetentionDays, patch.historyRetentionDays])
     if (patch.undoWindowDays !== undefined) entries.push([SETTINGS_KEYS.undoWindowDays, patch.undoWindowDays])
     if (patch.logLevel !== undefined) entries.push([SETTINGS_KEYS.logLevel, patch.logLevel])

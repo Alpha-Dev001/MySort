@@ -12,7 +12,7 @@ import type { FileRule, RuleInput, RuleTestResult } from '../shared/types'
 import type { RuleRow, RulesRepo } from '../db/repositories/rulesRepo'
 import type { Category } from '../shared/types'
 import { normalizeExtensions, computeRuleWarnings, resolveRule, type RuleCandidate, type RuleContext } from '../engine/rules'
-import { checkAbsoluteStructure } from '../engine/pathSafety'
+import { checkAbsoluteStructure, isInside, normalizePath, pathsEqual } from '../engine/pathSafety'
 
 export interface ResolvedRuleWrite {
   name: string
@@ -141,6 +141,20 @@ export class RulesService {
     }
   }
 
+  /**
+   * Rename tracking: when the destination root moves (the user renamed its
+   * folder and MySort followed), absolute destinations that were picked under
+   * the old root must move with it, or the next move would recreate the old
+   * tree. Relative destinations re-resolve against the root automatically.
+   */
+  remapAbsoluteDestinations(oldRoot: string, newRoot: string): void {
+    for (const row of this.repo.list()) {
+      if (row.destinationKind !== 'absolute') continue
+      const next = relocatePath(normalizePath(row.destination), oldRoot, newRoot)
+      if (next) this.repo.updateDestination(row.id, next)
+    }
+  }
+
   private validate(input: ResolvedRuleWrite): void {
     if (input.name.trim().length === 0) throw appError('VALIDATION_FAILED', 'a rule needs a name')
     if (input.extensions.length === 0 && !input.namePattern) {
@@ -162,6 +176,18 @@ export class RulesService {
       if (!structural.ok) throw appError(structural.code, structural.message)
     }
   }
+}
+
+/**
+ * Where does `child` sit after the folder `oldRoot` became `newRoot`?
+ * Returns null when `child` does not belong under `oldRoot`.
+ */
+export function relocatePath(child: string, oldRoot: string, newRoot: string): string | null {
+  const from = normalizePath(oldRoot)
+  const to = normalizePath(newRoot)
+  if (pathsEqual(child, from)) return to
+  if (isInside(child, from)) return path.join(to, child.slice(from.length + 1))
+  return null
 }
 
 /** Cheap availability probe used for warnings: the destination's root must exist. */

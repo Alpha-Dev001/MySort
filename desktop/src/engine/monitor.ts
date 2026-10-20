@@ -11,8 +11,10 @@ import type { FsReader } from './fs'
 
 export interface MonitorEvents {
   onAdd(filePath: string): void
+  onAddDir(dirPath: string): void
   onChange(filePath: string): void
   onUnlink(filePath: string): void
+  onUnlinkDir(dirPath: string): void
   onError(error: Error): void
   onReady(): void
 }
@@ -52,8 +54,10 @@ export class FolderMonitor {
     })
     this.watcher = watcher
     watcher.on('add', (p: string) => this.options.events.onAdd(p))
+    watcher.on('addDir', (p: string) => this.options.events.onAddDir(p))
     watcher.on('change', (p: string) => this.options.events.onChange(p))
     watcher.on('unlink', (p: string) => this.options.events.onUnlink(p))
+    watcher.on('unlinkDir', (p: string) => this.options.events.onUnlinkDir(p))
     watcher.on('error', (e: unknown) =>
       this.options.events.onError(e instanceof Error ? e : new Error(String(e)))
     )

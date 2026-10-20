@@ -80,7 +80,7 @@ function openExternalIfAllowed(url: string): void {
   }
 }
 
-export function createMainWindow(): BrowserWindow {
+export function createMainWindow(showOnReady = true): BrowserWindow {
   const dark = nativeTheme.shouldUseDarkColors
   const win = new BrowserWindow({
     width: 1200,
@@ -106,7 +106,9 @@ export function createMainWindow(): BrowserWindow {
     },
   })
 
-  win.once('ready-to-show', () => win.show())
+  if (showOnReady) {
+    win.once('ready-to-show', () => win.show())
+  }
 
   win.webContents.setWindowOpenHandler(({ url }) => {
     openExternalIfAllowed(url)

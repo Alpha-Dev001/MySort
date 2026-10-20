@@ -210,7 +210,5 @@ export async function runUndo(
   }
   const error = result.error ?? appError('INTERNAL', 'the undo move did not complete')
   opts.journal.setUndoStatus(row.id, 'blocked', error.code ?? 'INTERNAL')
-  opts.journal.setUndoStatus(row.id, 'blocked', error.code ?? 'INTERNAL')
-  opts.journal.setUndoStatus(row.id, 'blocked', error.code ?? 'INTERNAL')
   return { status: 'failed', undoOperationId: operationId, error }
 }

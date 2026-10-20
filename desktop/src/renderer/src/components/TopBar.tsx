@@ -1,5 +1,6 @@
 import React from 'react'
 import { Menu } from 'lucide-react'
+import Logo from './Logo'
 import ThemeToggle from './ThemeToggle'
 import styles from './TopBar.module.css'
 
@@ -24,6 +25,10 @@ const TopBar: React.FC<TopBarProps> = ({ title, narrow, drawerOpen, onOpenDrawer
   return (
     <div className={styles.bar}>
       <div className={styles.left}>
+        {/* The sidebar carries the logo, but it is off-canvas at this tier —
+            so the bar shows it instead, or the window would have no identity
+            of its own. */}
+        {narrow && <Logo size={28} className={styles.logo} />}
         {narrow && (
           <button
             type="button"

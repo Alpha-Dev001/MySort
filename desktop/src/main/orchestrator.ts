@@ -32,17 +32,24 @@ import { buildPlan } from '../engine/planner'
 import { executeOperation, type ExecuteInput, type ExecuteResult } from '../engine/executor'
 import { recoverUnfinished } from '../engine/recovery'
 import { runUndo } from '../engine/undo'
+import { RenameWatcher } from '../engine/renameWatcher'
+import { inferOfflineRename, pathKey, snapshotNames } from '../engine/renameTracking'
 
 import {
   checkNameEligibility,
   checkStatEligibility,
+  isDangerousDirName,
+  isInside,
+  normalizePath,
+  pathsEqual,
+  sameVolume,
   validateDestination,
   type DestinationContext,
 } from '../engine/pathSafety'
-import { resolveRule } from '../engine/rules'
+import { resolveRule, sortRules, patternToRegExp, resolveRuleDestination } from '../engine/rules'
 import { SETTINGS_KEY_RULES_SEEDED, SEED_RULES } from '../engine/defaultRules'
 import { SettingsService } from './settingsService'
-import { RulesService } from './rulesService'
+import { RulesService, relocatePath } from './rulesService'
 import { logger } from './logger'
 
 export interface OrchestratorEvents {
@@ -51,8 +58,11 @@ export interface OrchestratorEvents {
   recoverySummary(summary: RecoverySummary): void
   rulesChanged(): void
   settingsChanged(s: ApplicationSettings): void
-  notify(kind: 'failure' | 'summary', title: string, body: string): void
+  notify(kind: 'failure' | 'summary' | 'info', title: string, body: string): void
 }
+
+/** Snapshot of the destination root's parent's subfolders, for offline rename tracking. */
+const SETTINGS_KEY_ROOT_PARENT_SNAPSHOT = 'destinationRootParentDirs'
 
 export interface OrchestratorDeps {
   repos: {
@@ -100,6 +110,12 @@ export class Orchestrator {
   private statusEmitScheduled = false
   private retentionTimer: ReturnType<typeof setInterval> | null = null
   private lastRecovery: RecoverySummary | null = null
+  /** Watches the parents of tracked folders + the destination root for renames. */
+  private readonly renameWatcher: RenameWatcher
+  /** The destination root we currently track renames for (original path string). */
+  private trackedRootPath: string | null = null
+  /** Paths the user was already told are missing; one notification per run per path. */
+  private readonly missingNotified = new Set<string>()
 
   constructor(private readonly deps: OrchestratorDeps) {
     this.readiness = new ReadinessChecker(deps.fs, {
@@ -114,6 +130,10 @@ export class Orchestrator {
         this.readiness.complete(p)
         this.scheduleStatus()
       },
+    })
+    this.renameWatcher = new RenameWatcher({
+      onRenamed: (from, to) => void this.handleRename(from, to),
+      onVanished: (p) => void this.handleVanish(p),
     })
   }
 
@@ -183,12 +203,19 @@ export class Orchestrator {
     this.state = 'starting'
     this.since = new Date().toISOString()
     this.emitStatus()
+    // Settle folder renames that happened while MySort was closed, before any
+    // watcher is created — otherwise a renamed folder is watched in vain.
+    await this.recoverRenames()
     const enabled = this.deps.repos.folders.listEnabled()
     for (const row of enabled) {
+      this.renameWatcher.track(row.path)
       await this.ensureRuntime(row)
     }
+    await this.syncRootTracking()
+    await this.renameWatcher.start()
     this.state = 'running'
     this.emitStatus()
+    await this.snapshotRootParent()
     for (const row of enabled) {
       void this.reconcile(row)
     }
@@ -203,6 +230,7 @@ export class Orchestrator {
       rt.state = 'paused'
     }
     this.readiness.stop()
+    await this.renameWatcher.stop()
     this.emitStatus()
     return this.status()
   }
@@ -210,7 +238,7 @@ export class Orchestrator {
   async dispose(): Promise<void> {
     this.disposed = true
     if (this.retentionTimer) clearInterval(this.retentionTimer)
-    for (const rt of this.runtimes.values()) await this.stopRuntime(rt)
+    this.renameWatcher.dispose()
     this.runtimes.clear()
     this.readiness.stop()
   }
@@ -249,6 +277,7 @@ export class Orchestrator {
       }
     }
     const row = this.deps.repos.folders.insert({ path: folderPath, mode })
+    this.renameWatcher.track(row.path)
     if (this.state === 'running' || this.state === 'starting') await this.ensureRuntime(row)
     void this.reconcile(row)
     this.emitStatus()
@@ -256,12 +285,14 @@ export class Orchestrator {
   }
 
   async removeFolder(folderId: number): Promise<void> {
+    const row = this.deps.repos.folders.get(folderId)
     const rt = this.runtimes.get(folderId)
     if (rt) {
       await this.stopRuntime(rt)
       this.runtimes.delete(folderId)
     }
     this.deps.repos.folders.remove(folderId) // never touches files
+    if (row) await this.renameWatcher.untrack(row.path)
     this.emitStatus()
   }
 
@@ -283,6 +314,247 @@ export class Orchestrator {
     if (folderPath.replace(/[\\/]+$/, '').toLowerCase() === root.replace(/[\\/]+$/, '').toLowerCase()) {
       throw appError('PATH_DENIED', 'a drive root cannot be monitored')
     }
+  }
+
+  // ------------------------------------------------------------------
+  // Rename tracking
+  // ------------------------------------------------------------------
+  //
+  // The user may rename a watched folder (or the destination root) instead of
+  // re-picking it. Tracking keeps the SAME folder row, so history, rules, and
+  // the auto timestamp survive; nothing is re-created at the old path.
+
+  /** Runs on every startMonitoring: follows renames that happened while closed. */
+  private async recoverRenames(): Promise<void> {
+    for (const row of this.deps.repos.folders.list()) {
+      if (existsSync(row.path)) {
+        void this.recordParentSnapshot(row)
+        continue
+      }
+      const followed = await this.followOfflineFolderRename(row)
+      if (!followed) this.notifyFolderMissing(row.path)
+    }
+    if (existsSync(this.deps.settingsService.get().destinationRoot)) return
+    await this.followOfflineRootRename()
+  }
+
+  private async followOfflineFolderRename(row: FolderRow): Promise<boolean> {
+    const parent = path.dirname(row.path)
+    let current: string[]
+    try {
+      current = await this.listDirNames(parent)
+    } catch {
+      return false // the parent is gone as well; the notice stands
+    }
+    const snapshot = this.deps.repos.folders.getParentDirs(row.id)
+    const outcome = inferOfflineRename(path.basename(row.path), snapshot, current)
+    if (outcome.status !== 'renamed') return false
+    const updated = await this.applyFolderRename(row.id, path.join(parent, outcome.to))
+    return updated !== null
+  }
+
+  private async followOfflineRootRename(): Promise<void> {
+    const root = this.deps.settingsService.get().destinationRoot
+    const parent = path.dirname(root)
+    let current: string[]
+    try {
+      current = await this.listDirNames(parent)
+    } catch {
+      this.notifyFolderMissing(root)
+      return
+    }
+    const snapshot = this.deps.repos.settings.get<string[]>(SETTINGS_KEY_ROOT_PARENT_SNAPSHOT)
+    const outcome = inferOfflineRename(path.basename(root), snapshot ?? null, current)
+    if (outcome.status !== 'renamed') {
+      this.notifyFolderMissing(root)
+      return
+    }
+    await this.applyRootRename(root, path.join(parent, outcome.to))
+  }
+
+  /** Live rename event from a parent watcher. */
+  private async handleRename(from: string, to: string): Promise<void> {
+    if (this.disposed || !existsSync(to)) return
+    const folder = this.deps.repos.folders.list().find((r) => pathsEqual(r.path, from))
+    if (folder) {
+      const updated = await this.applyFolderRename(folder.id, to)
+      logger.info(
+        updated
+          ? `rename tracking: '${folder.path}' -> '${to}'`
+          : `rename tracking: could not follow '${from}'`
+      )
+      this.deps.events.notify(
+        updated ? 'info' : 'failure',
+        updated ? 'Folder followed' : 'Watched folder could not be followed',
+        updated
+          ? `${path.basename(from)} is now ${path.basename(to)} — MySort keeps sorting from there.`
+          : `${from} disappeared and another watched folder may already use the new place. Open MySort to re-pick it.`
+      )
+      return
+    }
+    const root = this.deps.settingsService.get().destinationRoot
+    if (pathsEqual(root, from)) {
+      logger.info(`rename tracking: destination root '${from}' -> '${to}'`)
+      await this.applyRootRename(from, to)
+    }
+  }
+
+  /** Live expiry of an unpaired removal — the folder is gone with no heir. */
+  private async handleVanish(vanishedPath: string): Promise<void> {
+    if (this.disposed) return
+    const folder = this.deps.repos.folders.list().find((r) => pathsEqual(r.path, vanishedPath))
+    if (folder) {
+      const rt = this.runtimes.get(folder.id)
+      if (rt) {
+        rt.state = 'unavailable'
+        rt.lastError = appError('DEST_UNAVAILABLE', 'the watched folder is gone')
+      }
+      this.plans.clear()
+      this.emitStatus()
+    }
+    this.notifyFolderMissing(vanishedPath)
+  }
+
+  /**
+   * Moves the watched folder row to its new path. Same row, same id: history,
+   * rules and the auto timestamp keep pointing at this folder.
+   */
+  private async applyFolderRename(folderId: number, nextPath: string): Promise<FolderRow | null> {
+    const row = this.deps.repos.folders.get(folderId)
+    if (!row) return null
+    if (pathsEqual(row.path, nextPath)) return this.deps.repos.folders.get(folderId)
+    try {
+      const updated = this.deps.repos.folders.updatePath(folderId, nextPath)
+      this.missingNotified.delete(pathKey(row.path))
+      const rt = this.runtimes.get(folderId)
+      if (rt) {
+        rt.row = updated
+        if (rt.monitor) await this.stopRuntime(rt)
+      }
+      await this.renameWatcher.untrack(row.path)
+      this.renameWatcher.track(nextPath)
+      this.plans.clear()
+      if (this.state === 'running' || this.state === 'starting') {
+        await this.ensureRuntime(updated)
+        void this.reconcile(updated)
+      }
+      await this.recordParentSnapshot(updated)
+      this.emitStatus()
+      return updated
+    } catch (e) {
+      logger.warn(`rename tracking: folder row update refused: ${(e as Error).message}`)
+      return null
+    }
+  }
+
+  /** Moves the destination root setting and every path anchored under it. */
+  private async applyRootRename(from: string, to: string): Promise<void> {
+    try {
+      this.plans.clear()
+      this.missingNotified.delete(pathKey(from))
+      this.deps.settingsService.update({ destinationRoot: to })
+      this.remapAnchoredPaths(from, to)
+      await this.syncRootTracking()
+      if (this.state === 'running') await this.refreshMonitors()
+      await this.snapshotRootParent()
+      this.deps.events.settingsChanged(this.deps.settingsService.get())
+      this.deps.events.notify(
+        'info',
+        'Destination folder followed',
+        `${path.basename(from)} is now ${to} — sorting continues in the renamed folder.`
+      )
+      logger.info(`rename tracking: destination root followed to '${to}'`)
+    } catch (e) {
+      logger.error(`rename tracking: destination root move failed: ${(e as Error).message}`)
+    }
+  }
+
+  /** Rewrites absolute rule destinations and category destinations under the old root. */
+  private remapAnchoredPaths(oldRoot: string, newRoot: string): void {
+    // Rules the user anchored by picking a folder through the OS picker.
+    this.deps.rulesService.remapAbsoluteDestinations(oldRoot, newRoot)
+    // Per-category destinations anchored the same way.
+    const categories = this.deps.repos.folders.getCategoryDestinations()
+    for (const [category, destPath] of Object.entries(categories)) {
+      const next = relocatePath(normalizePath(destPath), oldRoot, newRoot)
+      if (next) this.deps.repos.folders.setCategoryDestination(category, next)
+    }
+  }
+
+  /** Top-level names that are destination subfolders; never sort these as candidates. */
+  private combinedDestinationSubfolders(): string[] {
+    const names = new Set<string>([
+      'Folders', 'Images', 'Videos', 'Documents', 'Audio', 'Archives', 'Other',
+      'Apps', 'Music', 'Pictures',
+    ])
+    try {
+      for (const r of this.deps.rulesService.ruleContext().rules) {
+        if (r.destination.kind === 'relative' && r.destination.value) {
+          const first = r.destination.value.split(/[\\/]/)[0]
+          if (first) names.add(first)
+        }
+      }
+    } catch {
+      /* rules unavailable; defaults still apply */
+    }
+    return [...names]
+  }
+
+  /** The tracked root changed (user picked another, or tracking followed it). */
+  private async syncRootTracking(): Promise<void> {
+    const root = this.deps.settingsService.get().destinationRoot
+    if (this.trackedRootPath && pathsEqual(this.trackedRootPath, root)) return
+    if (this.trackedRootPath) await this.renameWatcher.untrack(this.trackedRootPath)
+    this.trackedRootPath = root
+    this.renameWatcher.track(root)
+  }
+
+  /** Snapshot of the destination root's parent for offline recovery. */
+  private async snapshotRootParent(): Promise<void> {
+    try {
+      const root = this.deps.settingsService.get().destinationRoot
+      const dirs = await this.listDirNames(path.dirname(root))
+      this.deps.repos.settings.set(SETTINGS_KEY_ROOT_PARENT_SNAPSHOT, dirs)
+    } catch {
+      /* parent unreadable; snapshot stays stale and recovery stays conservative */
+    }
+  }
+
+  /** Subfolder names under a parent, via the injected fs port. */
+  private async listDirNames(parent: string): Promise<string[]> {
+    const names = await this.deps.fs.readdir(parent)
+    const dirs: string[] = []
+    for (const n of names) {
+      try {
+        const stat = await this.deps.fs.lstat(path.join(parent, n))
+        if (stat.isDirectory) dirs.push(n)
+      } catch {
+        /* the entry vanished mid-scan */
+      }
+    }
+    return dirs
+  }
+
+  /** Snapshot of a watched folder's parent, taken on every successful scan. */
+  private async recordParentSnapshot(row: FolderRow): Promise<void> {
+    try {
+      const dirs = await this.listDirNames(path.dirname(row.path))
+      this.deps.repos.folders.setParentDirs(row.id, snapshotNames(dirs))
+    } catch {
+      /* parent unreadable; snapshot stays stale */
+    }
+  }
+
+  /** One notice per path per run: the folder is gone and could not be followed. */
+  private notifyFolderMissing(folderPath: string): void {
+    const key = pathKey(folderPath)
+    if (this.missingNotified.has(key)) return
+    this.missingNotified.add(key)
+    this.deps.events.notify(
+      'failure',
+      'Folder not found',
+      `${folderPath} no longer exists and its new location is not identifiable. Re-pick the folder in Settings to keep sorting it.`
+    )
   }
 
   private toMonitoredFolder(row: FolderRow): MonitoredFolder {
@@ -409,15 +681,32 @@ export class Orchestrator {
   }
 
   private makeMonitor(row: FolderRow): FolderMonitor {
+    const destRoot = this.deps.settingsService.get().destinationRoot
+    const combined = pathsEqual(row.path, destRoot)
+    // In combined (sort-in-place) mode the watched folder IS the destination
+    // root, so ignoring the whole root would ignore everything. Ignore only the
+    // destination subfolders instead.
+    const ignoredPaths = combined ? [] : [destRoot]
+    const isDestSubfolder = (p: string): boolean =>
+      combined && this.combinedDestinationSubfolders().includes(path.basename(p))
     return new FolderMonitor({
       folderPath: row.path,
-      ignoredPaths: [this.deps.settingsService.get().destinationRoot],
+      ignoredPaths,
       events: {
         onAdd: (p) => {
+          if (isDestSubfolder(p)) return
+          void this.readiness.add(p)
+        },
+        onAddDir: (p) => {
+          if (!this.deps.settingsService.get().sortFolders) return
+          const name = path.basename(p)
+          if (isDangerousDirName(name)) return
+          if (isDestSubfolder(p)) return
           void this.readiness.add(p)
         },
         onChange: (p) => this.readiness.change(p),
         onUnlink: (p) => this.readiness.remove(p),
+        onUnlinkDir: (p) => this.readiness.remove(p),
         onError: (e) => this.handleWatcherError(row.id, e),
         onReady: () => {
           const rt = this.runtimes.get(row.id)
@@ -535,19 +824,96 @@ export class Orchestrator {
     folder: FolderRow
   ): Promise<void> {
     try {
-      const resolution = resolveRule(candidate.fileName, this.deps.rulesService.ruleContext())
-      if (resolution.outcome === 'no_action') {
+      const settings = this.deps.settingsService.get()
+      // Safety: never move a folder that contains the destination root or any
+      // monitored folder — that would drag the destination into itself.
+      let destPath: string | null = null
+      let ruleKind: 'custom' | 'default' | 'none' = 'default'
+      let ruleId: string | null = null
+      let ruleLabel = 'Folders'
+      let explanation = 'Top-level folder sorted into the Folders bucket.'
+      const stat = await this.deps.fs.lstat(candidate.path).catch(() => null)
+      const isDir = !!stat?.isDirectory && !stat?.isSymlink
+
+      if (isDir && !settings.sortFolders) {
         this.readiness.complete(candidate.path)
         return
       }
-      if (resolution.outcome === 'error' || !resolution.destination) {
-        logger.warn(`auto move refused: rule error for candidate (${resolution.error?.code ?? 'unknown'})`)
+      if (isDir && isDangerousDirName(candidate.fileName)) {
         this.readiness.complete(candidate.path)
         return
       }
+      if (isDir && (this.combinedDestinationSubfolders().includes(candidate.fileName))) {
+        this.readiness.complete(candidate.path)
+        return
+      }
+      if (isDir) {
+        const root = normalizePath(settings.destinationRoot)
+        if (isInside(root, candidate.path) || pathsEqual(root, candidate.path)) {
+          // destination root lives inside this folder: moving it is unsafe
+          this.readiness.complete(candidate.path)
+          return
+        }
+        for (const mf of this.deps.repos.folders.list()) {
+          if (!mf.enabled) continue
+          if (mf.id === folder.id) continue
+          if (isInside(mf.path, candidate.path) || pathsEqual(mf.path, candidate.path)) {
+            this.readiness.complete(candidate.path)
+            return
+          }
+        }
+        // Name-pattern custom rules take precedence over the bucket.
+        const ctx = this.deps.rulesService.ruleContext()
+        const ordered = sortRules(ctx.rules)
+        let matched = false
+        for (const rule of ordered) {
+          if (!rule.enabled || !rule.namePattern) continue
+          if (!patternToRegExp(rule.namePattern).test(candidate.fileName.toLowerCase())) continue
+          const resolved = resolveRuleDestination(rule.destination, ctx.destinationRoot)
+          if (resolved.ok) {
+            destPath = resolved.path
+            ruleKind = 'custom'
+            ruleId = rule.id
+            ruleLabel = rule.name
+            explanation = `Matched custom rule '${rule.name}' by filename pattern.`
+            matched = true
+            break
+          }
+        }
+        if (!matched) {
+          destPath = normalizePath(path.join(settings.destinationRoot, 'Folders'))
+        }
+      } else {
+        const resolution = resolveRule(candidate.fileName, this.deps.rulesService.ruleContext())
+        if (resolution.outcome === 'no_action') {
+          this.readiness.complete(candidate.path)
+          return
+        }
+        if (resolution.outcome === 'error' || !resolution.destination) {
+          logger.warn(`auto move refused: rule error for candidate (${resolution.error?.code ?? 'unknown'})`)
+          this.readiness.complete(candidate.path)
+          return
+        }
+        destPath = resolution.destination
+        ruleKind = resolution.ruleKind === 'none' ? 'default' : resolution.ruleKind
+        ruleId = resolution.ruleId
+        ruleLabel = resolution.ruleLabel
+        explanation = resolution.explanation.summary
+      }
+
+      if (isDir && destPath && !sameVolume(candidate.path, destPath)) {
+        this.readiness.complete(candidate.path)
+        return
+      }
+
+      if (!destPath) {
+        this.readiness.complete(candidate.path)
+        return
+      }
+
       const validation = await validateDestination(
         'absolute',
-        resolution.destination,
+        destPath,
         this.destinationContext({ sourceFolderId: folder.id, sourceFolderPath: folder.path })
       )
       if (!validation.ok) {
@@ -564,10 +930,10 @@ export class Orchestrator {
         destDir: validation.path,
         destName: candidate.fileName,
         rule: {
-          kind: resolution.ruleKind,
-          id: resolution.ruleId,
-          label: resolution.ruleLabel,
-          explanation: resolution.explanation.summary,
+          kind: ruleKind,
+          id: ruleId,
+          label: ruleLabel,
+          explanation,
         },
         fingerprint,
       })
@@ -666,6 +1032,8 @@ export class Orchestrator {
     return {
       reader: this.deps.fs,
       destinationRoot: this.deps.settingsService.get().destinationRoot,
+      sortFolders: this.deps.settingsService.get().sortFolders,
+      destinationSubfolders: this.combinedDestinationSubfolders(),
       monitoredFolders: this.deps.repos.folders.list().map((f) => ({
         id: f.id,
         path: f.path,
@@ -685,19 +1053,25 @@ export class Orchestrator {
   async reconcile(row: FolderRow): Promise<void> {
     const rt = this.runtimes.get(row.id)
     try {
+      void this.recordParentSnapshot(row) // rename tracking: where the folder's parent stood now
       const entries = await listTopLevel(this.deps.fs, row.path)
       if (row.mode === 'auto') {
         const sinceMs = row.auto_since ? Date.parse(row.auto_since) : 0
         for (const full of entries) {
           const name = path.basename(full)
           if (!checkNameEligibility(name).eligible) continue
-          if (this.isRecentlyMoved(full)) continue
           let stat
           try {
             stat = await this.deps.fs.lstat(full)
           } catch {
             continue
           }
+          if (stat.isDirectory) {
+            if (isDangerousDirName(name)) continue
+            if (!this.deps.settingsService.get().sortFolders) continue
+            if (this.combinedDestinationSubfolders().includes(name)) continue
+          }
+          if (this.isRecentlyMoved(full)) continue
           if (!checkStatEligibility(stat).eligible) continue
           if (stat.birthtimeMs < sinceMs) continue // files older than auto_since stay untouched
           if (this.deps.repos.operations.hasActiveOperation(full)) continue
@@ -951,6 +1325,7 @@ export class Orchestrator {
 
   /** Recreates watchers (used after the destination root or settings change). */
   async refreshMonitors(): Promise<void> {
+    await this.syncRootTracking()
     for (const rt of this.runtimes.values()) {
       if (rt.monitor) {
         await this.stopRuntime(rt)

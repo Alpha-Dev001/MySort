@@ -132,6 +132,14 @@ export class RulesRepo {
     return this.get(id) as RuleRow
   }
 
+  /** Internal only: rewrite an absolute destination (rename tracking keeps rule destinations valid when the destination root moves). */
+  updateDestination(id: string, destination: string): RuleRow {
+    this.db
+      .prepare(`UPDATE rules SET destination = ?, updated_at = ? WHERE id = ?`)
+      .run(destination, new Date().toISOString(), id)
+    return this.get(id) as RuleRow
+  }
+
   remove(id: string): void {
     this.db.prepare(`DELETE FROM rules WHERE id = ?`).run(id)
   }

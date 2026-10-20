@@ -33,6 +33,12 @@ export class GrantStore {
     const opts: Electron.OpenDialogOptions = {
       title: purpose === 'monitor' ? 'Choose a folder to monitor' : 'Choose a destination folder',
       properties: ['openDirectory'],
+      // Nudge the picker toward the location that makes sense for each purpose,
+      // so "watch my downloads" / "sort into a folder outside of them" is one click.
+      defaultPath:
+        purpose === 'monitor'
+          ? (process.env['USERPROFILE'] ? path.join(process.env['USERPROFILE'], 'Downloads') : undefined)
+          : (process.env['USERPROFILE'] ? path.join(process.env['USERPROFILE'], 'Documents') : undefined),
     }
     const result = win
       ? await dialog.showOpenDialog(win, opts)

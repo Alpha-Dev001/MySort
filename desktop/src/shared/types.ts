@@ -261,6 +261,8 @@ export interface ApplicationSettings {
   resumeMonitoringOnLaunch: boolean
   notifications: NotificationPreference
   previewBeforeAuto: boolean
+  /** Whether top-level folders are sorted into a "Folders" bucket. */
+  sortFolders: boolean
   historyRetentionDays: number
   undoWindowDays: number
   logLevel: LogLevel
@@ -330,6 +332,204 @@ export interface FolderGrant {
 export type FolderPickPurpose = 'monitor' | 'destination'
 
 // ---------------------------------------------------------------------------
+// Local file index & search
+// ---------------------------------------------------------------------------
+
+export type SearchSort = 'name' | 'modified' | 'size' | 'relevance'
+export type SortOrder = 'asc' | 'desc'
+
+/**
+ * A search over the local metadata index.
+ *
+ * This is an explicit filter model, not a natural-language parser: every
+ * field maps to a query the index can answer directly. The renderer sends
+ * these fields; the main process turns them into a parameterised statement.
+ */
+export interface SearchQuery {
+  /** Filename text. Matched as a substring, or as a fuzzy subsequence. */
+  text?: string
+  /** When true, `text` may match out of order (e.g. "rpt" in "report.pdf"). */
+  fuzzy?: boolean
+  /** Extensions without a dot, lowercase. */
+  extensions?: string[]
+  /** Only files inside this directory (and its subdirectories). */
+  parentDir?: string
+  sizeMin?: number | null
+  sizeMax?: number | null
+  /** Epoch milliseconds. */
+  modifiedAfter?: number | null
+  modifiedBefore?: number | null
+  createdAfter?: number | null
+  createdBefore?: number | null
+  sort?: SearchSort
+  order?: SortOrder
+  limit?: number
+  offset?: number
+}
+
+/** How much the index trusts its own record for this file. */
+export type VerificationState = 'indexed' | 'hashed' | 'stale'
+
+export interface IndexedFile {
+  path: string
+  parentDir: string
+  name: string
+  /** Lowercase, without the dot. Empty when the file has no extension. */
+  ext: string
+  sizeBytes: number
+  modifiedMs: number
+  createdMs: number
+  /** Content hash, when it has been computed. */
+  sha256: string | null
+  verification: VerificationState
+}
+
+export interface SearchResultPage {
+  items: IndexedFile[]
+  /** Size of the whole filtered set, not of this page. */
+  total: number
+  tookMs: number
+  /** True when the result set was capped rather than exhausted. */
+  truncated: boolean
+}
+
+export type IndexPhase = 'idle' | 'scanning' | 'hashing' | 'rebuilding' | 'cancelling' | 'error'
+
+export interface IndexStatus {
+  phase: IndexPhase
+  running: boolean
+  scanned: number
+  indexed: number
+  skipped: number
+  errors: number
+  /** Root currently being walked. */
+  currentRoot: string | null
+  startedAt: string | null
+  finishedAt: string | null
+  message: string | null
+  /** Total files known to the index. */
+  totalIndexed: number
+}
+
+/**
+ * What the indexer is allowed to touch.
+ *
+ * Everything here is opt-in: the index only ever reads metadata, and it never
+ * writes to, moves or deletes a file.
+ */
+export interface IndexScope {
+  /** Absolute directory paths to walk. */
+  roots: string[]
+  /** How deep to descend from each root. 0 = the root only. */
+  maxDepth: number
+  /** Absolute path prefixes that are never indexed. */
+  excludedPaths: string[]
+  /** Lowercase extensions (no dot) that are never indexed. */
+  excludedExtensions: string[]
+  /** Skip dotfiles and dot-directories. */
+  excludeHidden: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Exact duplicate detection
+// ---------------------------------------------------------------------------
+
+export interface DuplicateGroup {
+  /** SHA-256 shared by every copy. */
+  hash: string
+  sizeBytes: number
+  copies: number
+  /**
+   * Bytes that could be reclaimed by keeping exactly one copy:
+   * (copies - 1) * size. Conservative — it never counts a copy twice.
+   */
+  wastedBytes: number
+  files: IndexedFile[]
+  /** 'verified' when every copy was re-checked against the live file. */
+  status: 'verified' | 'uncertain'
+  /** Human-readable caveats, e.g. "one copy changed while it was being hashed". */
+  notes: string[]
+}
+
+export interface DuplicateReport {
+  groups: DuplicateGroup[]
+  /** Files considered (same size, more than one copy). */
+  candidateFiles: number
+  /** Files actually hashed. */
+  hashedFiles: number
+  /** Files skipped because hashing failed or the file changed mid-scan. */
+  unverifiableFiles: number
+  tookMs: number
+  /** True when the scan stopped early (cancelled or capped). */
+  truncated: boolean
+}
+
+// ---------------------------------------------------------------------------
+// Rule recommendations
+// ---------------------------------------------------------------------------
+
+export type RecommendationStatus = 'pending' | 'accepted' | 'dismissed'
+
+export interface RuleRecommendation {
+  id: string
+  /** Stable identity of the pattern, so a dismissed one stays dismissed. */
+  fingerprint: string
+  /** Rule that would be created. */
+  name: string
+  extensions: string[]
+  namePattern: string | null
+  /** Relative destination folder under the destination root. */
+  destination: string
+  /** Why MySort thinks this is worth suggesting. */
+  evidence: string
+  /** How many past moves support it. */
+  occurrences: number
+  /** Earliest and latest supporting move. */
+  firstSeenAt: string
+  lastSeenAt: string
+  status: RecommendationStatus
+  createdAt: string
+  updatedAt: string
+}
+
+// ---------------------------------------------------------------------------
+// Collections
+// ---------------------------------------------------------------------------
+
+export type CollectionRuleKind = 'extension' | 'name_contains' | 'parent' | 'my_sort_rule'
+
+export interface CollectionRule {
+  kind: CollectionRuleKind
+  value: string
+}
+
+export interface FileCollection {
+  id: string
+  name: string
+  description: string
+  /** Rule-based membership. */
+  rules: CollectionRule[]
+  /** Files added by hand. */
+  manualPaths: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface CollectionMember {
+  path: string
+  name: string
+  ext: string
+  sizeBytes: number
+  modifiedMs: number
+  /** Why the file is in the collection. */
+  reason: string
+  /** True when the file no longer exists on disk. */
+  missing: boolean
+  /** True when the file exists but was changed since it was indexed. */
+  changed: boolean
+}
+
+// ---------------------------------------------------------------------------
 // Renderer-facing bridge API (implemented by preload, typed for renderer)
 // ---------------------------------------------------------------------------
 
@@ -378,12 +578,64 @@ export interface MySortApi {
   }
   overview: { get(): Promise<Result<OverviewStats>> }
   diagnostics: { export(): Promise<Result<{ saved: boolean }>> }
-  log: { rendererError(input: { message: string; stack?: string }): Promise<Result<null>> }
+  log: { rendererError(input: { message: string; stack?: string }>): Promise<Result<null>> }
+
+  /** Local metadata index and search. */
+  search: {
+    query(input: SearchQuery): Promise<Result<SearchResultPage>>
+    recent(limit?: number): Promise<Result<IndexedFile[]>>
+    scope(): Promise<Result<IndexScope>>
+    setScope(input: { scope: IndexScope }): Promise<Result<IndexScope>>
+    status(): Promise<Result<IndexStatus>>
+    start(input?: { rebuild?: boolean }): Promise<Result<IndexStatus>>
+    cancel(): Promise<Result<IndexStatus>>
+    clear(): Promise<Result<IndexStatus>>
+    /** Opens the file with its default application. */
+    open(input: { path: string }): Promise<Result<null>>
+    /** Reveals the file in its containing folder. */
+    reveal(input: { path: string }): Promise<Result<null>>
+    /** Opens the folder that contains the file. */
+    openFolder(input: { path: string }): Promise<Result<null>>
+  }
+
+  /** Exact duplicate detection. */
+  duplicates: {
+    scan(input?: { limit?: number }): Promise<Result<DuplicateReport>>
+  }
+
+  /** Suggested rules derived from repeated user-approved moves. */
+  recommendations: {
+    list(): Promise<Result<RuleRecommendation[]>>
+    dismiss(input: { id: string }): Promise<Result<RuleRecommendation[]>>
+    accept(input: { id: string }): Promise<Result<FileRule>>
+    /** Files that would match a candidate recommendation. */
+    preview(input: { id: string }): Promise<Result<SearchResultPage>>
+    /** Detects patterns from the operation history. */
+    detect(): Promise<Result<RuleRecommendation[]>>
+  }
+
+  /** Virtual collections: references to files, never copies. */
+  collections: {
+    list(): Promise<Result<FileCollection[]>>
+    create(input: { name: string; description?: string }): Promise<Result<FileCollection>>
+    remove(input: { id: string }): Promise<Result<null>>
+    setRules(input: { id: string; rules: CollectionRule[] }): Promise<Result<FileCollection>>
+    addMember(input: { id: string; path: string }): Promise<Result<FileCollection>>
+    removeMember(input: { id: string; path: string }): Promise<Result<FileCollection>>
+    members(input: { id: string }): Promise<Result<CollectionMember[]>>
+  }
+
+  /** The review inbox: a read-only plan of what MySort would do next. */
+  inbox: {
+    plan(input: { folderId: number }): Promise<Result<OrganizationPlan>>
+    apply(input: { planId: string; itemIds: string[] }): Promise<Result<PreviewApplyResult>>
+  }
 
   onMonitoringStatus(cb: (s: MonitoringStatus) => void): Unsubscribe
   onOperationUpdated(cb: (op: FileOperation) => void): Unsubscribe
   onRulesChanged(cb: (rules: FileRule[]) => void): Unsubscribe
   onSettingsChanged(cb: (s: ApplicationSettings) => void): Unsubscribe
+  onIndexStatus(cb: (s: IndexStatus) => void): Unsubscribe
 }
 
 export interface SettingsPatch {
@@ -392,6 +644,7 @@ export interface SettingsPatch {
   resumeMonitoringOnLaunch?: boolean
   notifications?: NotificationPreference
   previewBeforeAuto?: boolean
+  sortFolders?: boolean
   historyRetentionDays?: number
   undoWindowDays?: number
   logLevel?: LogLevel
@@ -424,6 +677,7 @@ export const EVENT_CHANNELS = {
   operationUpdated: 'operation:updated',
   rulesChanged: 'rules:changed',
   settingsChanged: 'settings:changed',
+  indexStatus: 'index:status',
 } as const
 
 /** Request channels, renderer → main. */
@@ -455,6 +709,42 @@ export const CHANNELS = {
   historyShowInFolder: 'history:showInFolder',
   diagnosticsExport: 'diagnostics:export',
   logRendererError: 'log:rendererError',
+
+  // Local search and the metadata index.
+  searchQuery: 'search:query',
+  searchRecent: 'search:recent',
+  searchScope: 'search:scope',
+  searchSetScope: 'search:setScope',
+  searchStatus: 'search:status',
+  searchStart: 'search:start',
+  searchCancel: 'search:cancel',
+  searchClear: 'search:clear',
+  searchOpen: 'search:open',
+  searchReveal: 'search:reveal',
+  searchOpenFolder: 'search:openFolder',
+
+  // Exact duplicate detection.
+  duplicatesScan: 'duplicates:scan',
+
+  // Rule recommendations.
+  recommendationsList: 'recommendations:list',
+  recommendationsDismiss: 'recommendations:dismiss',
+  recommendationsAccept: 'recommendations:accept',
+  recommendationsPreview: 'recommendations:preview',
+  recommendationsDetect: 'recommendations:detect',
+
+  // Virtual collections.
+  collectionsList: 'collections:list',
+  collectionsCreate: 'collections:create',
+  collectionsRemove: 'collections:remove',
+  collectionsSetRules: 'collections:setRules',
+  collectionsAddMember: 'collections:addMember',
+  collectionsRemoveMember: 'collections:removeMember',
+  collectionsMembers: 'collections:members',
+
+  // The review inbox.
+  inboxPlan: 'inbox:plan',
+  inboxApply: 'inbox:apply',
 } as const
 
 export type ChannelName = (typeof CHANNELS)[keyof typeof CHANNELS]

@@ -105,6 +105,7 @@ export const settingsPatchSchema = z.strictObject({
   resumeMonitoringOnLaunch: z.boolean().optional(),
   notifications: z.enum(['failures', 'summaries', 'none']).optional(),
   previewBeforeAuto: z.boolean().optional(),
+  sortFolders: z.boolean().optional(),
   historyRetentionDays: z.number().int().min(30).max(3650).optional(),
   undoWindowDays: z.number().int().min(1).max(365).optional(),
   logLevel: z.enum(['error', 'warn', 'info', 'debug']).optional(),

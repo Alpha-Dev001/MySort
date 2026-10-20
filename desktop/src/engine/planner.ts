@@ -9,10 +9,11 @@
 import path from 'node:path'
 import { randomUUID } from 'node:crypto'
 import { candidateSuffixes } from './classify'
-import { resolveRule, type RuleContext } from './rules'
+import { resolveRule, sortRules, patternToRegExp, resolveRuleDestination, type RuleContext } from './rules'
 import {
   checkNameEligibility,
   checkStatEligibility,
+  isDangerousDirName,
   isInside,
   pathsEqual,
   sameVolume,
@@ -21,7 +22,8 @@ import {
 } from './pathSafety'
 import { planUniqueName } from './uniqueName'
 import type { FsReader } from './fs'
-import type { OrganizationPlan, PlanWarning } from '../shared/types'
+import type { OrganizationPlan, PlanWarning, RuleExplanation } from '../shared/types'
+import { normalizePath } from './pathSafety'
 
 export interface PlanRequest {
   folderId: number
@@ -51,11 +53,17 @@ export async function buildPlan(reader: FsReader, req: PlanRequest): Promise<Org
   for (const full of entries) {
     const fileName = path.basename(full)
 
-    // A file already sitting under the destination root has nothing to do.
-    if (
-      isInside(full, req.destinationContext.destinationRoot) ||
-      pathsEqual(full, req.destinationContext.destinationRoot)
-    ) {
+    // A file already sitting under the destination root has nothing to do — but
+    // only when it is in a subfolder of the destination root. Files sitting
+    // directly in the destination root are still unsorted downloads (the
+    // combined "watch and sort into the same folder" setup) and must be
+    // processed. Only files already moved into a category subfolder are skipped.
+    const candidateDir = normalizePath(path.dirname(full))
+    const destRoot = normalizePath(req.destinationContext.destinationRoot)
+    if (isInside(full, destRoot) && candidateDir !== destRoot) {
+      continue
+    }
+    if (pathsEqual(full, destRoot)) {
       continue
     }
 
@@ -80,23 +88,65 @@ export async function buildPlan(reader: FsReader, req: PlanRequest): Promise<Org
       continue
     }
 
+    const isDir = stat.isDirectory && !stat.isSymlink
+
+    if (isDir) {
+      if (!req.destinationContext.sortFolders) continue
+      if (isDangerousDirName(fileName)) continue
+      if ((req.destinationContext.destinationSubfolders ?? []).includes(fileName)) continue
+      // Never move a folder that contains the destination root.
+      if (isInside(req.destinationContext.destinationRoot, full)) continue
+    }
+
     // Nothing to classify without an extension; the file stays where it is.
-    if (candidateSuffixes(fileName).length === 0) {
+    // Folders are classified by name pattern or the Folders bucket instead.
+    if (!isDir && candidateSuffixes(fileName).length === 0) {
       skip(fileName, 'NO_EXTENSION')
       continue
     }
 
-    const resolution = resolveRule(fileName, req.rules)
-    if (resolution.outcome === 'no_action') {
-      skip(fileName, 'NO_EXTENSION')
-      continue
-    }
-    if (resolution.outcome === 'error' || !resolution.destination) {
-      skip(fileName, resolution.error?.code ?? 'RULE_INVALID')
-      continue
+    // Resolve destination.
+    let finalDest: string | null = null
+    let explanation: RuleExplanation = { outcome: 'default', summary: '', considered: [] }
+
+    if (isDir) {
+      const ctx = req.rules
+      const ordered = sortRules(ctx.rules)
+      let matched = false
+      for (const rule of ordered) {
+        if (!rule.enabled || !rule.namePattern) continue
+        if (!patternToRegExp(rule.namePattern).test(fileName.toLowerCase())) continue
+        const r = resolveRuleDestination(rule.destination, ctx.destinationRoot)
+        if (r.ok) {
+          finalDest = r.path
+          explanation = { outcome: 'custom', summary: `Matched custom rule '${rule.name}' by filename pattern.`, considered: [] }
+          matched = true
+          break
+        }
+      }
+      if (!matched) {
+        finalDest = normalizePath(path.join(ctx.destinationRoot, 'Folders'))
+        explanation = { outcome: 'default', summary: 'Top-level folder sorted into the Folders bucket.', considered: [] }
+      }
+    } else {
+      const resolution = resolveRule(fileName, req.rules)
+      if (resolution.outcome === 'no_action') {
+        skip(fileName, 'NO_EXTENSION')
+        continue
+      }
+      if (resolution.outcome === 'error' || !resolution.destination) {
+        skip(fileName, resolution.error?.code ?? 'RULE_INVALID')
+        continue
+      }
+      finalDest = resolution.destination
+      explanation = resolution.explanation
     }
 
-    const validation = await validateDestination('absolute', resolution.destination, req.destinationContext)
+    if (!finalDest) {
+      skip(fileName, 'RULE_INVALID')
+      continue
+    }
+    const validation = await validateDestination('absolute', finalDest, req.destinationContext)
     if (!validation.ok) {
       skip(fileName, validation.code)
       continue
@@ -104,13 +154,17 @@ export async function buildPlan(reader: FsReader, req: PlanRequest): Promise<Org
 
     const destDir = validation.path
     if (!(await reader.exists(destDir))) {
-      // The folder will be created by the executor, but only if the volume is
-      // actually there; otherwise there is nowhere to put the file.
       const root = path.parse(destDir).root
       if (!(await reader.exists(root))) {
         skip(fileName, 'DEST_UNAVAILABLE')
         continue
       }
+    }
+
+    // Cross-volume folder moves are not supported (would need a recursive copy).
+    if (isDir && !sameVolume(full, finalDest)) {
+      skip(fileName, 'CROSS_VOLUME')
+      continue
     }
 
     const chosen = await planUniqueName(fileName, async (name) =>
@@ -119,7 +173,7 @@ export async function buildPlan(reader: FsReader, req: PlanRequest): Promise<Org
 
     const warnings: PlanWarning[] = []
     if (chosen.renamed) warnings.push('NAME_CONFLICT_WILL_RENAME')
-    if (!sameVolume(full, resolution.destination)) warnings.push('CROSS_VOLUME')
+    if (!isDir && finalDest && !sameVolume(full, finalDest)) warnings.push('CROSS_VOLUME')
     if (!(await reader.exists(destDir))) warnings.push('DEST_FOLDER_WILL_BE_CREATED')
 
     plan.items.push({
@@ -128,7 +182,7 @@ export async function buildPlan(reader: FsReader, req: PlanRequest): Promise<Org
       sourcePath: full,
       destPath: path.join(destDir, chosen.name),
       sizeBytes: stat.size,
-      explanation: resolution.explanation,
+      explanation,
       warnings,
     })
   }

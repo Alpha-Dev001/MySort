@@ -13,8 +13,19 @@ const BehaviourTab: React.FC<{
   return (
     <Section title="Behaviour" description="How much MySort does on its own.">
       <FieldRow
+        label="Sort folders too"
+        help="Off by default. When on, top-level folders in a watched folder are moved into a 'Folders' bucket inside the destination folder. Only turn this on if you want whole folders moved."
+        status={savingFor('sortFolders')}
+      >
+        <Toggle
+          checked={settings.sortFolders}
+          onChange={(next) => save({ sortFolders: next }, 'Sort folders')}
+          label="Sort folders too"
+        />
+      </FieldRow>
+      <FieldRow
         label="Review before moving"
-        help="When off, finished downloads are organised without waiting for your approval."
+        help="Off by default: finished downloads are organised without waiting for your approval. Turn it on to have MySort wait for you in the Inbox."
         status={savingFor('previewBeforeAuto')}
       >
         <Toggle

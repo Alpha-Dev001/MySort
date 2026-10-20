@@ -13,6 +13,7 @@ import path from 'node:path'
 import { appError, type AppError } from '../shared/errors'
 import initSql from './migrations/0001_init.sql?raw'
 import pageIndexSql from './migrations/0002_page_index.sql?raw'
+import folderRenameSql from './migrations/0003_folder_rename.sql?raw'
 
 export interface MigrationFile {
   version: number
@@ -23,6 +24,7 @@ export interface MigrationFile {
 export const MIGRATIONS: MigrationFile[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'page_index', sql: pageIndexSql },
+  { version: 3, name: 'folder_rename', sql: folderRenameSql },
 ]
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version
