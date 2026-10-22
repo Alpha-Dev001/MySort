@@ -19,6 +19,7 @@
     "test:watch": "vitest",
     "package": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder --win nsis",
+    "smoke": "node scripts/smoke-test.mjs",
     "rebuild:native": "npm rebuild better-sqlite3"
   },
   "dependencies": {

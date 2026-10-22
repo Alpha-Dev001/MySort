@@ -7,6 +7,7 @@
 
 import { app, dialog, ipcMain, nativeTheme, shell } from 'electron'
 import { existsSync, promises as fsp, statSync, openSync, readSync, closeSync } from 'node:fs'
+import path from 'node:path'
 import { z } from 'zod'
 import { CHANNELS, type ApplicationSettings, type FolderGrant } from '../shared/types'
 import { appError, ok, toAppError, type AppError, type Result } from '../shared/errors'
@@ -29,12 +30,30 @@ import {
   settingsResetSchema,
   showInFolderSchema,
   themePreferenceSchema,
+
+  collectionCreateSchema,
+  collectionIdSchema,
+  collectionMemberSchema,
+  collectionSetRulesSchema,
+  duplicatesScanSchema,
+  inboxApplySchema,
+  inboxPlanSchema,
+  indexScopeSchema,
+  pathPayloadSchema,
+  recommendationIdSchema,
+  searchQuerySchema,
+  searchRecentSchema,
+  searchStartSchema,
 } from '../shared/schemas'
 import { validateDestination } from '../engine/pathSafety'
 import type { Orchestrator } from './orchestrator'
 import type { SettingsService } from './settingsService'
 import type { RulesService, ResolvedRuleWrite } from './rulesService'
 import type { GrantStore } from './grants'
+import type { SearchService } from './searchService'
+import type { DuplicateService } from './duplicateService'
+import type { RecommendationService } from './recommendationService'
+import type { CollectionService } from './collectionService'
 import { logger } from './logger'
 import type { OperationsRepo } from '../db/repositories/operationsRepo'
 import type { FoldersRepo } from '../db/repositories/foldersRepo'
@@ -45,6 +64,10 @@ export interface IpcContext {
   settingsService: SettingsService
   rulesService: RulesService
   grants: GrantStore
+  searchService: SearchService
+  duplicateService: DuplicateService
+  recommendationService: RecommendationService
+  collectionService: CollectionService
   repos: {
     settings: SettingsRepo
     folders: FoldersRepo
@@ -269,6 +292,123 @@ export function registerIpcHandlers(ctx: IpcContext): void {
     shell.showItemInFolder(target)
     return null
   })
+
+  // ---------- local search and the metadata index ----------
+
+  handleParsed(CHANNELS.searchQuery, searchQuerySchema, (input) => ctx.searchService.query(input))
+
+  handleParsed(CHANNELS.searchRecent, searchRecentSchema, (input) =>
+    ctx.searchService.recent(input.limit ?? 25)
+  )
+
+  handle(CHANNELS.searchScope, () => ctx.searchService.getScope())
+
+  handleParsed(CHANNELS.searchSetScope, indexScopeSchema, (input) =>
+    ctx.searchService.setScope(input.scope)
+  )
+
+  handle(CHANNELS.searchStatus, () => ctx.searchService.getStatus())
+
+  handleParsed(CHANNELS.searchStart, searchStartSchema, (input) =>
+    ctx.searchService.start({ rebuild: input.rebuild === true })
+  )
+
+  handle(CHANNELS.searchCancel, () => ctx.searchService.cancel())
+
+  handle(CHANNELS.searchClear, () => ctx.searchService.clear())
+
+  handleParsed(CHANNELS.searchOpen, pathPayloadSchema, async (input) => {
+    // Only files MySort has catalogued may be opened, and the file is
+    // re-checked on disk first — the index is a cache, not the authority.
+    ctx.searchService.requireIndexed(input.path)
+    const check = await ctx.searchService.revalidate(input.path)
+    if (!check.exists) throw appError('NOT_FOUND', 'that file is no longer there')
+    const error = await shell.openPath(input.path)
+    if (error) throw appError('INTERNAL', `the file could not be opened: ${error}`)
+    return null
+  })
+
+  handleParsed(CHANNELS.searchReveal, pathPayloadSchema, (input) => {
+    ctx.searchService.requireIndexed(input.path)
+    if (!existsSync(input.path)) throw appError('NOT_FOUND', 'that file is no longer there')
+    shell.showItemInFolder(input.path)
+    return null
+  })
+
+  handleParsed(CHANNELS.searchOpenFolder, pathPayloadSchema, async (input) => {
+    ctx.searchService.requireIndexed(input.path)
+    const dir = path.dirname(input.path)
+    if (!existsSync(dir)) throw appError('NOT_FOUND', 'that folder is no longer there')
+    const error = await shell.openPath(dir)
+    if (error) throw appError('INTERNAL', `the folder could not be opened: ${error}`)
+    return null
+  })
+
+  // ---------- exact duplicate detection ----------
+
+  handleParsed(CHANNELS.duplicatesScan, duplicatesScanSchema, async (input) =>
+    ctx.duplicateService.scan({ limit: input.limit })
+  )
+
+  // ---------- rule recommendations ----------
+
+  handle(CHANNELS.recommendationsList, () => ctx.recommendationService.list())
+
+  handleParsed(CHANNELS.recommendationsDismiss, recommendationIdSchema, (input) =>
+    ctx.recommendationService.dismiss(input.id)
+  )
+
+  handleParsed(CHANNELS.recommendationsAccept, recommendationIdSchema, (input) =>
+    ctx.recommendationService.accept(input.id)
+  )
+
+  handleParsed(CHANNELS.recommendationsPreview, recommendationIdSchema, (input) =>
+    ctx.recommendationService.preview(input.id)
+  )
+
+  handle(CHANNELS.recommendationsDetect, () => ctx.recommendationService.detect())
+
+  // ---------- collections ----------
+
+  handle(CHANNELS.collectionsList, () => ctx.collectionService.list())
+
+  handleParsed(CHANNELS.collectionsCreate, collectionCreateSchema, (input) =>
+    ctx.collectionService.create(input.name, input.description ?? '')
+  )
+
+  handleParsed(CHANNELS.collectionsRemove, collectionIdSchema, (input) => {
+    ctx.collectionService.remove(input.id)
+    return null
+  })
+
+  handleParsed(CHANNELS.collectionsSetRules, collectionSetRulesSchema, (input) =>
+    ctx.collectionService.setRules(input.id, input.rules)
+  )
+
+  handleParsed(CHANNELS.collectionsAddMember, collectionMemberSchema, (input) => {
+    // A collection holds references to files MySort knows about, so a member
+    // always points at something the index has catalogued.
+    ctx.searchService.requireIndexed(input.path)
+    return ctx.collectionService.addMember(input.id, input.path)
+  })
+
+  handleParsed(CHANNELS.collectionsRemoveMember, collectionMemberSchema, (input) =>
+    ctx.collectionService.removeMember(input.id, input.path)
+  )
+
+  handleParsed(CHANNELS.collectionsMembers, collectionIdSchema, async (input) =>
+    ctx.collectionService.members(input.id)
+  )
+
+  // ---------- the review inbox ----------
+
+  handleParsed(CHANNELS.inboxPlan, inboxPlanSchema, (input) =>
+    ctx.orchestrator.preview(input.folderId)
+  )
+
+  handleParsed(CHANNELS.inboxApply, inboxApplySchema, (input) =>
+    ctx.orchestrator.applyPlan(input.planId, input.itemIds)
+  )
 }
 
 /** Last 128 KB of the log file, or a marker if it cannot be read at all. */

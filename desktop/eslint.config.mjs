@@ -66,7 +66,7 @@ export default tseslint.config(
     rules: { 'no-restricted-imports': ['error', rendererRestricted] },
   },
   {
-    files: ['tests/**/*.ts', '*.config.ts', 'scripts/**/*.mjs'],
+    files: ['tests/**/*.ts', '*.config.ts', '*.config.mts', 'scripts/**/*.mjs', 'scripts/**/*.cjs'],
     rules: { 'no-console': 'off', '@typescript-eslint/no-explicit-any': 'off' },
   }
 )

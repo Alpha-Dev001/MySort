@@ -23,6 +23,11 @@ import RuleDetail from './screens/RuleDetail'
 import HistoryScreen from './screens/History'
 import SettingsScreen from './screens/Settings'
 import { SetupScreen } from './screens/Setup'
+import SearchScreen from './screens/Search'
+import DuplicatesScreen from './screens/Duplicates'
+import InboxScreen from './screens/Inbox'
+import CollectionsScreen from './screens/Collections'
+import SuggestionsScreen from './screens/Suggestions'
 import styles from './App.module.css'
 import './styles.css'
 
@@ -154,14 +159,24 @@ const Shell = (): React.ReactElement => {
         return <SetupScreen onDone={() => nav('overview')} onSkip={() => nav('overview')} />
       case 'overview':
         return <Overview onNavigate={nav} />
+      case 'inbox':
+        return <InboxScreen />
       case 'rules':
         return ruleId ? (
           <RuleDetail ruleId={ruleId} onBack={() => nav('rules')} onName={setRuleName} />
         ) : (
           <RulesScreen onOpenRule={openRule} />
         )
+      case 'suggestions':
+        return <SuggestionsScreen />
       case 'history':
         return <HistoryScreen onNavigate={nav} />
+      case 'search':
+        return <SearchScreen />
+      case 'duplicates':
+        return <DuplicatesScreen />
+      case 'collections':
+        return <CollectionsScreen />
       case 'settings':
         return (
           <SettingsScreen tab={settingsTab ?? DEFAULT_SETTINGS_TAB} onTabChange={openSettingsTab} />

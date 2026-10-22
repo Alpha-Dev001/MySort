@@ -75,6 +75,12 @@ export interface OrchestratorDeps {
   fs: FsWriter
   /** Deny list for destinations (system locations, app data, startup folders). */
   denyPaths: string[]
+  /**
+   * Raw watcher events, forwarded so the local metadata index can stay in
+   * step with the file system. The orchestrator never uses them for anything
+   * else.
+   */
+  onFileEvent?: (event: { type: 'add' | 'change' | 'unlink'; path: string }) => void
   events: OrchestratorEvents
 }
 
@@ -695,6 +701,7 @@ export class Orchestrator {
       events: {
         onAdd: (p) => {
           if (isDestSubfolder(p)) return
+          this.deps.onFileEvent?.({ type: 'add', path: p })
           void this.readiness.add(p)
         },
         onAddDir: (p) => {
@@ -704,8 +711,14 @@ export class Orchestrator {
           if (isDestSubfolder(p)) return
           void this.readiness.add(p)
         },
-        onChange: (p) => this.readiness.change(p),
-        onUnlink: (p) => this.readiness.remove(p),
+        onChange: (p) => {
+          this.deps.onFileEvent?.({ type: 'change', path: p })
+          this.readiness.change(p)
+        },
+        onUnlink: (p) => {
+          this.deps.onFileEvent?.({ type: 'unlink', path: p })
+          this.readiness.remove(p)
+        },
         onUnlinkDir: (p) => this.readiness.remove(p),
         onError: (e) => this.handleWatcherError(row.id, e),
         onReady: () => {

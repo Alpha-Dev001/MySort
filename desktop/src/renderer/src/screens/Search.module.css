@@ -1,0 +1,168 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--sp-3);
+}
+
+.toolbarSearch {
+  flex: 1 1 280px;
+  min-width: 220px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+  align-items: flex-end;
+}
+
+.filter {
+  min-width: 150px;
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-secondary);
+  font-size: var(--t-caption);
+  font-family: var(--font-mono);
+  cursor: pointer;
+}
+
+.chip[data-active='true'] {
+  border-color: var(--brand);
+  background: var(--brand-tint);
+  color: var(--brand-text);
+}
+
+.extInput {
+  width: 150px;
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: var(--t-caption);
+  color: var(--text-muted);
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.extChip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-xs);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border-soft);
+  color: var(--text-secondary);
+  font-size: var(--t-micro);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fileName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.path {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-1);
+  justify-content: flex-end;
+}
+
+.indexPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.progress {
+  height: 6px;
+  border-radius: var(--r-full);
+  background: var(--surface-track);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--brand);
+  transition: width var(--dur-2) var(--ease-out);
+}
+
+.indexStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  font-size: var(--t-caption);
+  color: var(--text-muted);
+}
+
+.roots {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-mono);
+  font-size: var(--t-micro);
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.rootPath {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.scopeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}

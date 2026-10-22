@@ -14,6 +14,8 @@ import { appError, type AppError } from '../shared/errors'
 import initSql from './migrations/0001_init.sql?raw'
 import pageIndexSql from './migrations/0002_page_index.sql?raw'
 import folderRenameSql from './migrations/0003_folder_rename.sql?raw'
+import fileIndexSql from './migrations/0004_file_index.sql?raw'
+import collectionsSql from './migrations/0005_collections_recommendations.sql?raw'
 
 export interface MigrationFile {
   version: number
@@ -25,6 +27,8 @@ export const MIGRATIONS: MigrationFile[] = [
   { version: 1, name: 'init', sql: initSql },
   { version: 2, name: 'page_index', sql: pageIndexSql },
   { version: 3, name: 'folder_rename', sql: folderRenameSql },
+  { version: 4, name: 'file_index', sql: fileIndexSql },
+  { version: 5, name: 'collections_recommendations', sql: collectionsSql },
 ]
 
 export const LATEST_SCHEMA_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version
@@ -76,11 +80,21 @@ export function runMigrations(db: Database.Database, dbPath: string): void {
     `INSERT INTO schema_migrations (version, name, applied_at) VALUES (?, ?, ?)`
   )
   for (const migration of pending) {
-    db.transaction(() => {
-      db.exec(migration.sql)
-      insert.run(migration.version, migration.name, new Date().toISOString())
-      db.pragma(`user_version = ${migration.version}`)
-    })()
+    try {
+      db.transaction(() => {
+        db.exec(migration.sql)
+        insert.run(migration.version, migration.name, new Date().toISOString())
+        db.pragma(`user_version = ${migration.version}`)
+      })()
+    } catch (e) {
+      // The transaction rolled back, so the database is unchanged. Say so, and
+      // say what the user can do about it.
+      throw appError(
+        'DB_ERROR',
+        `migration ${migration.version} (${migration.name}) failed: ${(e as Error).message}. ` +
+          'The database was left unchanged. Move the database file out of the way to start a new one.'
+      )
+    }
   }
 }
 
@@ -111,14 +125,25 @@ function pruneOldBackups(dir: string): void {
 }
 
 export function openDatabase(dbPath: string): Database.Database {
+  let db: Database.Database | null = null
   try {
-    const db = new Database(dbPath)
+    db = new Database(dbPath)
     db.pragma('foreign_keys = ON')
     db.pragma('journal_mode = WAL')
     db.pragma('synchronous = FULL')
     runMigrations(db, dbPath)
     return db
   } catch (e) {
+    // The connection must be released before the error propagates: a refused
+    // database would otherwise stay locked, and the user could not move it
+    // out of the way.
+    if (db) {
+      try {
+        db.close()
+      } catch {
+        /* the connection was already unusable */
+      }
+    }
     if (e instanceof DatabaseFromFutureError) throw e
     if (isAppErrorLike(e)) throw e
     throw appError('DB_ERROR', `could not open the database: ${(e as Error).message}`)

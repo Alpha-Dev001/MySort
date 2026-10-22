@@ -67,10 +67,15 @@ const MINUTE = 60_000
 const HOUR = 60 * MINUTE
 const DAY = 24 * HOUR
 
-/** "just now" / "4 min ago" / "3 hr ago" / "2 days ago" / a real date. */
-export function formatRelative(iso: string | null | undefined, now = Date.now()): string {
-  if (!iso) return '—'
-  const then = Date.parse(iso)
+/**
+ * "just now" / "4 min ago" / "3 hr ago" / "2 days ago" / a real date.
+ *
+ * Accepts an ISO string or an epoch-millisecond number — the local index
+ * stores timestamps as numbers, the history store as ISO strings.
+ */
+export function formatRelative(iso: string | number | null | undefined, now = Date.now()): string {
+  if (iso === null || iso === undefined || iso === '') return '—'
+  const then = typeof iso === 'number' ? iso : Date.parse(iso)
   if (Number.isNaN(then)) return '—'
   const delta = now - then
   if (delta < 0) return 'just now'

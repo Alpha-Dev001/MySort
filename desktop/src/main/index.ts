@@ -13,15 +13,22 @@ import { SettingsRepo } from '../db/repositories/settingsRepo'
 import { FoldersRepo } from '../db/repositories/foldersRepo'
 import { OperationsRepo } from '../db/repositories/operationsRepo'
 import { RulesRepo } from '../db/repositories/rulesRepo'
+import { IndexRepo } from '../db/repositories/indexRepo'
+import { CollectionsRepo } from '../db/repositories/collectionsRepo'
+import { RecommendationsRepo } from '../db/repositories/recommendationsRepo'
 import { NodeFs } from '../engine/fs'
 import { buildDefaultDenyPaths } from '../engine/pathSafety'
 import type { ApplicationSettings, Category } from '../shared/types'
 import { Orchestrator } from './orchestrator'
 import { SettingsService } from './settingsService'
 import { RulesService } from './rulesService'
+import { SearchService } from './searchService'
+import { DuplicateService } from './duplicateService'
+import { RecommendationService } from './recommendationService'
+import { CollectionService } from './collectionService'
 import { GrantStore } from './grants'
 import { TrayController } from './tray'
-import { createMainWindow, hardenSession, loadRenderer, watchWindowTheme } from './window'
+import { createMainWindow, hardenSession, watchWindowTheme } from './window'
 import { notifyUser } from './notifications'
 import { configureLogging, logger, maybeRevertDebug } from './logger'
 import { registerIpcHandlers } from './ipc'
@@ -32,6 +39,7 @@ import { registerIpcHandlers } from './ipc'
 let mainWindow: BrowserWindow | null = null
 let tray: TrayController | null = null
 let orchestrator: Orchestrator | null = null
+let searchService: SearchService | null = null
 let db: Database.Database | null = null
 let quitting = false
 let settingsService: SettingsService
@@ -80,6 +88,9 @@ async function main(): Promise<void> {
   const settingsRepo = new SettingsRepo(db)
   const foldersRepo = new FoldersRepo(db)
   const operationsRepo = new OperationsRepo(db)
+  const indexRepo = new IndexRepo(db)
+  const collectionsRepo = new CollectionsRepo(db)
+  const recommendationsRepo = new RecommendationsRepo(db)
   const defaultRoot = app.getPath('downloads')
 
   settingsService = new SettingsService(settingsRepo, { destinationRoot: defaultRoot })
@@ -105,12 +116,46 @@ async function main(): Promise<void> {
     ].filter(Boolean),
   })
 
+  const nodeFs = new NodeFs()
+  const search = new SearchService({
+    indexRepo,
+    settingsRepo,
+    fs: nodeFs,
+    // The default index scope follows the folders MySort already watches.
+    defaultRoots: () => {
+      const roots = new Set<string>()
+      for (const folder of foldersRepo.listEnabled()) roots.add(folder.path)
+      roots.add(settingsService.get().destinationRoot)
+      return [...roots].filter((r) => r.length > 0)
+    },
+    // The renderer shows indexing progress, so the status is pushed to it.
+    onStatus: (status) => broadcast('index:status', status),
+  })
+  const duplicateService = new DuplicateService({ indexRepo, fs: nodeFs })
+  const recommendationService = new RecommendationService({
+    recommendationsRepo,
+    operationsRepo,
+    rulesService,
+    searchService: search,
+    settingsService,
+  })
+  const collectionService = new CollectionService({
+    collectionsRepo,
+    indexRepo,
+    searchService: search,
+    fs: nodeFs,
+  })
+  searchService = search
+
   orchestrator = new Orchestrator({
     repos: { settings: settingsRepo, folders: foldersRepo, operations: operationsRepo },
     settingsService,
     rulesService,
-    fs: new NodeFs(),
+    fs: nodeFs,
     denyPaths,
+    onFileEvent: (event) => {
+      void search.applyFileEvent(event.type, event.path)
+    },
     events: {
       monitoringStatus: (s) => {
         tray?.setStatus(s)
@@ -145,6 +190,10 @@ async function main(): Promise<void> {
     settingsService,
     rulesService,
     grants,
+    searchService,
+    duplicateService,
+    recommendationService,
+    collectionService,
     repos: { settings: settingsRepo, folders: foldersRepo, operations: operationsRepo },
     getWindow: () => mainWindow,
     applySettingsSideEffects,
@@ -215,6 +264,8 @@ async function main(): Promise<void> {
 }
 
 function createAndLoadWindow(settingsSvc: SettingsService, show = true): void {
+  // `createMainWindow` loads the renderer itself; loading it a second time
+  // would abort the first request and leave the window blank.
   mainWindow = createMainWindow(show)
   mainWindow.on('close', (event) => {
     const behavior = (settingsSvc?.get().closeButtonBehavior) ?? 'tray'
@@ -226,7 +277,6 @@ function createAndLoadWindow(settingsSvc: SettingsService, show = true): void {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
-  void loadRenderer(mainWindow)
 }
 
 function showMainWindow(): void {
@@ -268,6 +318,8 @@ async function shutdown(): Promise<void> {
   tray?.destroy()
   tray = null
   try {
+    // Stop any running index pass before the database goes away.
+    await searchService?.drain()
     await orchestrator?.dispose()
     orchestrator = null
     db?.close()

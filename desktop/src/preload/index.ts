@@ -11,12 +11,16 @@ import {
   CHANNELS,
   EVENT_CHANNELS,
   type ApplicationSettings,
+  type CollectionRule,
   type FileOperation,
   type FileRule,
   type HistoryQuery,
+  type IndexScope,
+  type IndexStatus,
   type MonitoringStatus,
   type MySortApi,
   type RuleInput,
+  type SearchQuery,
   type SettingsPatch,
   type Unsubscribe,
 } from '../shared/types'
@@ -84,6 +88,68 @@ const api: MySortApi = {
       invoke(CHANNELS.logRendererError, input) as ReturnType<MySortApi['log']['rendererError']>,
   },
 
+  search: {
+    query: (input: SearchQuery) =>
+      invoke(CHANNELS.searchQuery, input) as ReturnType<MySortApi['search']['query']>,
+    recent: (limit?: number) =>
+      invoke(CHANNELS.searchRecent, { limit }) as ReturnType<MySortApi['search']['recent']>,
+    scope: () => invoke(CHANNELS.searchScope, null) as ReturnType<MySortApi['search']['scope']>,
+    setScope: (input: { scope: IndexScope }) =>
+      invoke(CHANNELS.searchSetScope, input) as ReturnType<MySortApi['search']['setScope']>,
+    status: () => invoke(CHANNELS.searchStatus, null) as ReturnType<MySortApi['search']['status']>,
+    start: (input?: { rebuild?: boolean }) =>
+      invoke(CHANNELS.searchStart, input ?? {}) as ReturnType<MySortApi['search']['start']>,
+    cancel: () => invoke(CHANNELS.searchCancel, null) as ReturnType<MySortApi['search']['cancel']>,
+    clear: () => invoke(CHANNELS.searchClear, null) as ReturnType<MySortApi['search']['clear']>,
+    open: (input: { path: string }) =>
+      invoke(CHANNELS.searchOpen, input) as ReturnType<MySortApi['search']['open']>,
+    reveal: (input: { path: string }) =>
+      invoke(CHANNELS.searchReveal, input) as ReturnType<MySortApi['search']['reveal']>,
+    openFolder: (input: { path: string }) =>
+      invoke(CHANNELS.searchOpenFolder, input) as ReturnType<MySortApi['search']['openFolder']>,
+  },
+
+  duplicates: {
+    scan: (input?: { limit?: number }) =>
+      invoke(CHANNELS.duplicatesScan, input ?? {}) as ReturnType<MySortApi['duplicates']['scan']>,
+  },
+
+  recommendations: {
+    list: () =>
+      invoke(CHANNELS.recommendationsList, null) as ReturnType<MySortApi['recommendations']['list']>,
+    dismiss: (input: { id: string }) =>
+      invoke(CHANNELS.recommendationsDismiss, input) as ReturnType<MySortApi['recommendations']['dismiss']>,
+    accept: (input: { id: string }) =>
+      invoke(CHANNELS.recommendationsAccept, input) as ReturnType<MySortApi['recommendations']['accept']>,
+    preview: (input: { id: string }) =>
+      invoke(CHANNELS.recommendationsPreview, input) as ReturnType<MySortApi['recommendations']['preview']>,
+    detect: () =>
+      invoke(CHANNELS.recommendationsDetect, null) as ReturnType<MySortApi['recommendations']['detect']>,
+  },
+
+  collections: {
+    list: () => invoke(CHANNELS.collectionsList, null) as ReturnType<MySortApi['collections']['list']>,
+    create: (input: { name: string; description?: string }) =>
+      invoke(CHANNELS.collectionsCreate, input) as ReturnType<MySortApi['collections']['create']>,
+    remove: (input: { id: string }) =>
+      invoke(CHANNELS.collectionsRemove, input) as ReturnType<MySortApi['collections']['remove']>,
+    setRules: (input: { id: string; rules: CollectionRule[] }) =>
+      invoke(CHANNELS.collectionsSetRules, input) as ReturnType<MySortApi['collections']['setRules']>,
+    addMember: (input: { id: string; path: string }) =>
+      invoke(CHANNELS.collectionsAddMember, input) as ReturnType<MySortApi['collections']['addMember']>,
+    removeMember: (input: { id: string; path: string }) =>
+      invoke(CHANNELS.collectionsRemoveMember, input) as ReturnType<MySortApi['collections']['removeMember']>,
+    members: (input: { id: string }) =>
+      invoke(CHANNELS.collectionsMembers, input) as ReturnType<MySortApi['collections']['members']>,
+  },
+
+  inbox: {
+    plan: (input: { folderId: number }) =>
+      invoke(CHANNELS.inboxPlan, input) as ReturnType<MySortApi['inbox']['plan']>,
+    apply: (input: { planId: string; itemIds: string[] }) =>
+      invoke(CHANNELS.inboxApply, input) as ReturnType<MySortApi['inbox']['apply']>,
+  },
+
   onMonitoringStatus: (cb: (s: MonitoringStatus) => void) =>
     subscribe(EVENT_CHANNELS.monitoringStatus, cb),
   onOperationUpdated: (cb: (op: FileOperation) => void) =>
@@ -91,6 +157,7 @@ const api: MySortApi = {
   onRulesChanged: (cb: (rules: FileRule[]) => void) => subscribe(EVENT_CHANNELS.rulesChanged, cb),
   onSettingsChanged: (cb: (s: ApplicationSettings) => void) =>
     subscribe(EVENT_CHANNELS.settingsChanged, cb),
+  onIndexStatus: (cb: (s: IndexStatus) => void) => subscribe(EVENT_CHANNELS.indexStatus, cb),
 }
 
 try {

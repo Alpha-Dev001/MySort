@@ -5,6 +5,7 @@
  */
 
 import path from 'node:path'
+import { existsSync } from 'node:fs'
 import { BrowserWindow, nativeTheme, session, shell } from 'electron'
 import { logger } from './logger'
 
@@ -31,6 +32,14 @@ const CHROME = {
 
 /** Must match `--titlebar-h` in the renderer's styles.css. */
 export const TITLEBAR_HEIGHT = 36
+
+/**
+ * The window/taskbar icon, copied to `out/main/assets/` at build time
+ * (electron-vite plugin) and by scripts/copy-assets.mjs. Without this the
+ * taskbar button shows the Electron logo in dev, where the process is
+ * electron.exe and no packaged icon exists.
+ */
+const WINDOW_ICON = path.join(__dirname, 'assets', 'icon.png')
 
 export function overlayFor(dark: boolean): { color: string; symbolColor: string; height: number } {
   const theme = dark ? CHROME.dark : CHROME.light
@@ -94,6 +103,12 @@ export function createMainWindow(showOnReady = true): BrowserWindow {
     autoHideMenuBar: true,
     titleBarStyle: 'hidden',
     titleBarOverlay: overlayFor(dark),
+    // The taskbar / alt-tab icon. Without this, Windows shows the Electron
+    // logo because dev runs under electron.exe. In production the packaged
+    // exe carries the icon, but setting it here keeps both cases consistent.
+    // Skipped when the asset is absent (icons not generated) rather than
+    // handing BrowserWindow a missing path.
+    ...(existsSync(WINDOW_ICON) ? { icon: WINDOW_ICON } : {}),
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -133,7 +148,18 @@ export function createMainWindow(showOnReady = true): BrowserWindow {
   return win
 }
 
+/**
+ * Windows whose renderer is being loaded right now.
+ *
+ * Loading the same document twice makes Chromium abort the first request
+ * (`ERR_ABORTED`), so the second load has to wait for the first instead of
+ * racing it.
+ */
+const loading = new WeakSet<BrowserWindow>()
+
 export async function loadRenderer(win: BrowserWindow): Promise<void> {
+  if (loading.has(win)) return
+  loading.add(win)
   // electron-vite injects the renderer dev-server URL into process.env; it is
   // not part of import.meta.env, which Vite replaces with a static object.
   const devUrl = process.env.ELECTRON_RENDERER_URL
@@ -156,6 +182,8 @@ export async function loadRenderer(win: BrowserWindow): Promise<void> {
     }
   } catch (e) {
     logger.error(`failed to load renderer: ${(e as Error).message}`)
+  } finally {
+    loading.delete(win)
   }
 }
 

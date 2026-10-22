@@ -301,6 +301,42 @@ export class OperationsRepo implements OperationJournal {
     ).n
   }
 
+  /**
+   * The completed moves the recommendation detector looks at.
+   *
+   * Only completed moves with a known destination are returned: a move that
+   * failed or was skipped is not evidence of a deliberate choice.
+   */
+  listCompletedMoves(limit = 1000): {
+    fileName: string
+    finalDestPath: string
+    finishedAt: string
+    initiatedBy: string
+  }[] {
+    const rows = this.db
+      .prepare(
+        `SELECT file_name, final_dest_path, finished_at, initiated_by
+         FROM operations
+         WHERE status = 'completed'
+           AND final_dest_path IS NOT NULL
+           AND COALESCE(finished_at, created_at) >= ?
+         ORDER BY COALESCE(finished_at, created_at) DESC
+         LIMIT ?`
+      )
+      .all(new Date(Date.now() - 180 * 86_400_000).toISOString(), limit) as {
+      file_name: string
+      final_dest_path: string
+      finished_at: string | null
+      initiated_by: string
+    }[]
+    return rows.map((r) => ({
+      fileName: r.file_name,
+      finalDestPath: r.final_dest_path,
+      finishedAt: r.finished_at ?? '',
+      initiatedBy: r.initiated_by,
+    }))
+  }
+
   /** Reconciliation guard: has this exact file already been handled since `sinceIso`? */
   wasRecentlyCompleted(sourcePath: string, sinceIso: string): boolean {
     const row = this.db

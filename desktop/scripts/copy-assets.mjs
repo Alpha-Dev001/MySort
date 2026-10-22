@@ -1,10 +1,10 @@
 /**
  * Copies the runtime assets the main process needs into the build output.
  *
- * `electron-builder` packages `out/**/*` and nothing else, so a tray icon
- * living in `assets/` would never reach the installed application. Copying it
- * into `out/main/assets/` keeps the packaged app self-contained and keeps the
- * source tree free of build artefacts.
+ * The packaged application contains the `out` tree and nothing else, so a
+ * tray icon living in `assets/` would never reach the installed program.
+ * Copying it into `out/main/assets/` keeps the packaged app self-contained
+ * and keeps the source tree free of build artefacts.
  *
  * Runs after `electron-vite build`.
  */
@@ -17,7 +17,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const ROOT = path.resolve(HERE, '..')
 
 /** Files the main process loads at runtime. */
-const RUNTIME_ASSETS = ['tray.png', 'tray@2x.png']
+const RUNTIME_ASSETS = ['icon.png', 'tray.png', 'tray@2x.png']
 
 const SRC_DIR = path.join(ROOT, 'assets')
 const DEST_DIR = path.join(ROOT, 'out', 'main', 'assets')

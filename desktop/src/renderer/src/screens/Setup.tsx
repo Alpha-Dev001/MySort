@@ -236,8 +236,8 @@ export const SetupScreen: React.FC<SetupScreenProps> = ({ onDone, onSkip }) => {
               <li>
                 <CheckCircle2 size={14} aria-hidden="true" />
                 <div>
-                  <strong>Shows you before it moves anything</strong>
-                  <p>Review the plan, then approve the files you want moved.</p>
+                  <strong>Sorts by your rules</strong>
+                  <p>Files are filed into the folders your rules choose.</p>
                 </div>
               </li>
               <li>

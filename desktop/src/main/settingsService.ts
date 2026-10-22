@@ -19,6 +19,7 @@ export const SETTINGS_KEYS = {
   undoWindowDays: 'undoWindowDays',
   logLevel: 'logLevel',
   onboardingCompleted: 'onboardingCompleted',
+  recommendationThreshold: 'recommendationThreshold',
   readinessStableChecks: 'readinessStableChecks',
 } as const
 
@@ -47,6 +48,7 @@ export class SettingsService {
       undoWindowDays: r.getNumber(SETTINGS_KEYS.undoWindowDays, 30),
       logLevel: r.getString(SETTINGS_KEYS.logLevel, 'info') as LogLevel,
       onboardingCompleted: r.getBool(SETTINGS_KEYS.onboardingCompleted, false),
+      recommendationThreshold: r.getNumber(SETTINGS_KEYS.recommendationThreshold, 3),
       readinessStableChecks: r.getNumber(SETTINGS_KEYS.readinessStableChecks, 3),
     }
   }
@@ -64,6 +66,7 @@ export class SettingsService {
     if (patch.undoWindowDays !== undefined) entries.push([SETTINGS_KEYS.undoWindowDays, patch.undoWindowDays])
     if (patch.logLevel !== undefined) entries.push([SETTINGS_KEYS.logLevel, patch.logLevel])
     if (patch.onboardingCompleted !== undefined) entries.push([SETTINGS_KEYS.onboardingCompleted, patch.onboardingCompleted])
+    if (patch.recommendationThreshold !== undefined) entries.push([SETTINGS_KEYS.recommendationThreshold, patch.recommendationThreshold])
     if (patch.destinationRoot !== undefined) entries.push([SETTINGS_KEYS.destinationRoot, patch.destinationRoot])
     for (const [key, value] of entries) this.repo.set(key, value)
     return this.get()

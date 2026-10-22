@@ -13,21 +13,41 @@
  * linked, refreshed and restored by Back/Forward.
  */
 
-export type Route = 'onboarding' | 'overview' | 'rules' | 'history' | 'settings'
+export type Route =
+  | 'onboarding'
+  | 'overview'
+  | 'inbox'
+  | 'rules'
+  | 'suggestions'
+  | 'history'
+  | 'search'
+  | 'duplicates'
+  | 'collections'
+  | 'settings'
 
 export const ROUTES: readonly Route[] = [
   'onboarding',
   'overview',
+  'inbox',
   'rules',
+  'suggestions',
   'history',
+  'search',
+  'duplicates',
+  'collections',
   'settings',
 ] as const
 
 export const ROUTE_TITLES: Record<Route, string> = {
   onboarding: 'Set up MySort',
   overview: 'Overview',
+  inbox: 'Inbox',
   rules: 'Rules',
+  suggestions: 'Suggestions',
   history: 'History',
+  search: 'Search',
+  duplicates: 'Duplicates',
+  collections: 'Collections',
   settings: 'Settings',
 }
 

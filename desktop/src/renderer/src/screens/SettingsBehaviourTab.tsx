@@ -35,6 +35,24 @@ const BehaviourTab: React.FC<{
         />
       </FieldRow>
       <FieldRow
+        label="Suggest a rule after"
+        help="How many similar moves have to happen before MySort offers to turn them into a rule. Suggestions are never applied on their own."
+        status={savingFor('recommendationThreshold')}
+      >
+        <Select
+          selectSize="sm"
+          aria-label="Suggest a rule after"
+          value={settings.recommendationThreshold}
+          onChange={(e) => save({ recommendationThreshold: Number(e.target.value) }, 'Suggestion threshold')}
+          options={[
+            { value: '2', label: '2 times' },
+            { value: '3', label: '3 times' },
+            { value: '5', label: '5 times' },
+            { value: '10', label: '10 times' },
+          ]}
+        />
+      </FieldRow>
+      <FieldRow
         label="Keep history for"
         help="Older activity is deleted when this window passes."
         status={savingFor('historyRetentionDays')}

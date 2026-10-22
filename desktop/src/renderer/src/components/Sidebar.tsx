@@ -9,6 +9,11 @@ import {
   Settings as SettingsIcon,
   Star,
   History as HistoryIcon,
+  Inbox as InboxIcon,
+  Lightbulb,
+  Search as SearchIcon,
+  CopyCheck,
+  Layers,
 } from 'lucide-react'
 import GithubMark from './GithubMark'
 import Logo from './Logo'
@@ -199,13 +204,10 @@ export default Sidebar
 /**
  * Default navigation model. Grouping gives the sidebar a readable rhythm.
  *
- * Only the four modules that are useful on their own live here: Overview,
- * Rules, History and Settings. The Review (approve pending moves) and Recovery
- * (finish interrupted moves) screens are not places you visit for their own
- * sake — they only have something to show when the work exists — so they are
- * surfaced as contextual entry points from Overview instead of as permanent nav
- * items. That keeps the rail short and stops those two screens from reading as
- * "empty" on a quiet day.
+ * "Organize" holds the screens you use to decide where files go. "Discover"
+ * holds the ones that look at what you already have: local search, exact
+ * duplicate detection and collections. Suggestions sit next to Rules because
+ * a suggestion is a proposed rule.
  */
 export function defaultNavGroups(attentionCount: number): { label: string; items: NavEntry[] }[] {
   return [
@@ -213,8 +215,18 @@ export function defaultNavGroups(attentionCount: number): { label: string; items
       label: 'Organize',
       items: [
         { route: 'overview', label: 'Overview', icon: LayoutDashboard, description: 'What MySort has been doing' },
+        { route: 'inbox', label: 'Inbox', icon: InboxIcon, description: 'Review what MySort would do next' },
         { route: 'rules', label: 'Rules', icon: ListChecks, description: 'Which files go where' },
+        { route: 'suggestions', label: 'Suggestions', icon: Lightbulb, description: 'Rules MySort noticed in your moves' },
         { route: 'history', label: 'History', icon: HistoryIcon, description: 'Past moves, undo and retry', badge: attentionCount },
+      ],
+    },
+    {
+      label: 'Discover',
+      items: [
+        { route: 'search', label: 'Search', icon: SearchIcon, description: 'Find files on this computer' },
+        { route: 'duplicates', label: 'Duplicates', icon: CopyCheck, description: 'Files with identical contents' },
+        { route: 'collections', label: 'Collections', icon: Layers, description: 'Group files without moving them' },
       ],
     },
     {

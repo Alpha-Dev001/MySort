@@ -110,13 +110,16 @@ export const settingsPatchSchema = z.strictObject({
   undoWindowDays: z.number().int().min(1).max(365).optional(),
   logLevel: z.enum(['error', 'warn', 'info', 'debug']).optional(),
   onboardingCompleted: z.boolean().optional(),
+  recommendationThreshold: z.number().int().min(2).max(50).optional(),
   destinationRootGrantId: idSchema.optional(),
 })
 
 /** Literal confirmation for destructive reset; handler checks the exact value. */
 export const settingsResetSchema = z.strictObject({ confirm: z.string().min(1).max(32) })
 
-export const folderPickSchema = z.strictObject({ purpose: z.enum(['monitor', 'destination']) })
+export const folderPickSchema = z.strictObject({
+  purpose: z.enum(['monitor', 'destination', 'index']),
+})
 export const folderAddSchema = z.strictObject({ grantId: idSchema, mode: z.enum(['manual', 'auto']) })
 export const folderIdSchema = z.strictObject({ folderId: z.number().int().min(1) })
 export const folderSetModeSchema = z.strictObject({
@@ -152,4 +155,98 @@ export const rendererErrorSchema = z.strictObject({
 
 /** Payload schema for channels that take no input. */
 export const emptySchema = z.null()
+
+// ---------------------------------------------------------------------------
+// Local search / metadata index
+// ---------------------------------------------------------------------------
+
+const epochMs = z.number().int().min(0).max(4_102_444_800_000)
+
+export const searchQuerySchema = z.strictObject({
+  text: z.string().max(200).optional(),
+  fuzzy: z.boolean().optional(),
+  extensions: z.array(z.string().max(40)).max(50).optional(),
+  parentDir: z.string().max(4096).optional(),
+  sizeMin: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().optional(),
+  sizeMax: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).nullable().optional(),
+  modifiedAfter: epochMs.nullable().optional(),
+  modifiedBefore: epochMs.nullable().optional(),
+  createdAfter: epochMs.nullable().optional(),
+  createdBefore: epochMs.nullable().optional(),
+  sort: z.enum(['name', 'modified', 'size', 'relevance']).optional(),
+  order: z.enum(['asc', 'desc']).optional(),
+  limit: z.number().int().min(1).max(200).optional(),
+  offset: z.number().int().min(0).max(1_000_000).optional(),
+})
+
+export const searchRecentSchema = z.strictObject({
+  limit: z.number().int().min(1).max(100).optional(),
+})
+
+export const indexScopeSchema = z.strictObject({
+  scope: z.strictObject({
+    roots: z.array(z.string().min(1).max(4096)).max(20),
+    maxDepth: z.number().int().min(0).max(16),
+    excludedPaths: z.array(z.string().max(4096)).max(50),
+    excludedExtensions: z.array(z.string().max(40)).max(200),
+    excludeHidden: z.boolean(),
+  }),
+})
+
+export const searchStartSchema = z.strictObject({
+  rebuild: z.boolean().optional(),
+})
+
+export const pathPayloadSchema = z.strictObject({
+  path: z.string().min(1).max(4096),
+})
+
+export const duplicatesScanSchema = z.strictObject({
+  limit: z.number().int().min(1).max(200).optional(),
+})
+
+// ---------------------------------------------------------------------------
+// Recommendations
+// ---------------------------------------------------------------------------
+
+export const recommendationIdSchema = z.strictObject({ id: idSchema })
+
+// ---------------------------------------------------------------------------
+// Collections
+// ---------------------------------------------------------------------------
+
+const collectionRuleSchema = z.strictObject({
+  kind: z.enum(['extension', 'name_contains', 'parent', 'my_sort_rule']),
+  value: z.string().min(1).max(4096),
+})
+
+export const collectionCreateSchema = z.strictObject({
+  name: z.string().trim().min(1).max(80),
+  description: z.string().max(400).optional(),
+})
+
+export const collectionIdSchema = z.strictObject({ id: idSchema })
+
+export const collectionSetRulesSchema = z.strictObject({
+  id: idSchema,
+  rules: z.array(collectionRuleSchema).max(50),
+})
+
+export const collectionMemberSchema = z.strictObject({
+  id: idSchema,
+  path: z.string().min(1).max(4096),
+})
+
+// ---------------------------------------------------------------------------
+// Inbox
+// ---------------------------------------------------------------------------
+
+export const inboxPlanSchema = z.strictObject({
+  folderId: z.number().int().min(1),
+})
+
+export const inboxApplySchema = z.strictObject({
+  planId: idSchema,
+  itemIds: z.array(idSchema).max(500),
+})
 

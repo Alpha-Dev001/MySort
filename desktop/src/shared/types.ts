@@ -267,6 +267,8 @@ export interface ApplicationSettings {
   undoWindowDays: number
   logLevel: LogLevel
   onboardingCompleted: boolean
+  /** How many repeated moves are needed before a rule is suggested. */
+  recommendationThreshold: number
   /** Internal tuning knob; not exposed in the UI yet. */
   readinessStableChecks: number
 }
@@ -329,7 +331,7 @@ export interface FolderGrant {
   displayName: string
 }
 
-export type FolderPickPurpose = 'monitor' | 'destination'
+export type FolderPickPurpose = 'monitor' | 'destination' | 'index'
 
 // ---------------------------------------------------------------------------
 // Local file index & search
@@ -578,7 +580,7 @@ export interface MySortApi {
   }
   overview: { get(): Promise<Result<OverviewStats>> }
   diagnostics: { export(): Promise<Result<{ saved: boolean }>> }
-  log: { rendererError(input: { message: string; stack?: string }>): Promise<Result<null>> }
+  log: { rendererError(input: { message: string; stack?: string }): Promise<Result<null>> }
 
   /** Local metadata index and search. */
   search: {
@@ -649,6 +651,7 @@ export interface SettingsPatch {
   undoWindowDays?: number
   logLevel?: LogLevel
   onboardingCompleted?: boolean
+  recommendationThreshold?: number
   /** Absolute destination root, granted through the folder picker. */
   destinationRootGrantId?: string
 }
