@@ -41,7 +41,13 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mysort-${{ matrix.platform }}
-          path: desktop/dist/*
+          path: |
+            desktop/dist/*.exe
+            desktop/dist/*.dmg
+            desktop/dist/*.zip
+            desktop/dist/*.AppImage
+            desktop/dist/*.deb
+            desktop/dist/*.blockmap
           if-no-files-matched: error
 
   publish:
