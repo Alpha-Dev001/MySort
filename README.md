@@ -17,7 +17,7 @@ MySort is a desktop application that monitors specified folders, waits for downl
 - **Folder monitoring**: Watch selected directories for new files
 - **Download waiting**: Intelligently waits for download completion before organizing
 - **Rule-based organization**: Apply custom rules to sort files into appropriate locations
-- **Cross-platform**: Designed for Windows with Electron
+- **Cross-platform**: Electron app for Windows, macOS and Linux
 
 ---
 
@@ -25,12 +25,15 @@ MySort is a desktop application that monitors specified folders, waits for downl
 
 ### Using the installer
 
-1. Download the latest installer from:
-   <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-Setup.exe>
+Download the latest build for your platform:
 
-2. Run `MySort-Setup.exe` and follow the installation wizard
+- **Windows**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-Setup.exe>
+- **macOS**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort.dmg>
+- **Linux**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort.AppImage>
+  (or `MySort.deb` on Debian/Ubuntu)
 
-3. Launch MySort from the Start Menu or desktop shortcut
+Then run the installer / mount the DMG / make the AppImage executable and launch
+MySort.
 
 ### Development
 
