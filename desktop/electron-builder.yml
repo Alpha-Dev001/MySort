@@ -15,6 +15,10 @@ artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 
 win:
   artifactName: MySort-Setup.exe
+  # Code signing: set CSC_LINK and CSC_KEY_PASSWORD (env or CI secrets) to sign
+  # the installer. An EV certificate removes SmartScreen warnings immediately.
+  signingHashAlgorithms:
+    - sha256
   # Generated from logo.svg by scripts/generate-icons.mjs; the .ico carries
   # 16..256 px so the shell picks the right size for the taskbar, the installer
   # list and the Start menu.

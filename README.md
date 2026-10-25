@@ -1,8 +1,16 @@
 # MySort
 
+[![Release](https://img.shields.io/github/v/release/Alpha-Dev001/MySort)](https://github.com/Alpha-Dev001/MySort/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%7C%20macOS%20%7C%20Linux-blue)](https://github.com/Alpha-Dev001/MySort/releases/latest)
+
 Every file. In its place.
 
 MySort watches a folder, waits until downloads finish, and organizes files by your rules.
+
+**Privacy first.** MySort runs entirely on your computer. There is no account, no
+telemetry, and no network access of any kind. Your files and index never leave
+your machine. The full source code is open and auditable.
 
 ---
 
@@ -28,10 +36,16 @@ MySort is a desktop application that monitors specified folders, waits for downl
 Download the latest build for your platform:
 
 - **Windows**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-Setup.exe>
-- **macOS**: `MySort-x64.dmg` / `MySort-arm64.dmg` (and `.zip`) on the
-  [Releases page](https://github.com/Alpha-Dev001/MySort/releases/latest)
-- **Linux**: `MySort-x64.AppImage` / `MySort-x64.deb` on the
-  [Releases page](https://github.com/Alpha-Dev001/MySort/releases/latest)
+- **macOS (Intel)**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-x64.dmg>
+- **macOS (Apple Silicon)**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-arm64.dmg>
+- **Linux (AppImage)**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-x86_64.AppImage>
+- **Linux (Debian/Ubuntu)**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-amd64.deb>
+
+> **Windows SmartScreen note:** the installer is currently unsigned, so Windows
+> may show "Windows protected your PC". **This is a standard Windows warning for
+> unsigned software, not a virus alert.** Click **More info → Run anyway** to
+> install. MySort is open source and contains no telemetry or network access.
+> Future releases signed with a publisher certificate will remove this prompt.
 
 Then run the installer / mount the DMG / make the AppImage executable and launch
 MySort.

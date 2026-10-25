@@ -235,6 +235,10 @@ checks the log for errors, and confirms the watched file was left untouched.
 It never points the app at the real Downloads folder, and it never deletes
 user data.
 
+> **Windows SmartScreen note:** the installer is currently unsigned, so Windows
+> may show "Windows protected your PC". Click **More info → Run anyway**. This is
+> expected for an unsigned build. Signed builds remove this prompt.
+
 ## Packaging
 
 `electron-builder.yml` builds installers for Windows, macOS and Linux:
