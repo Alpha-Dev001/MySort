@@ -28,9 +28,10 @@ MySort is a desktop application that monitors specified folders, waits for downl
 Download the latest build for your platform:
 
 - **Windows**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort-Setup.exe>
-- **macOS**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort.dmg>
-- **Linux**: <https://github.com/Alpha-Dev001/MySort/releases/latest/download/MySort.AppImage>
-  (or `MySort.deb` on Debian/Ubuntu)
+- **macOS**: `MySort-x64.dmg` / `MySort-arm64.dmg` (and `.zip`) on the
+  [Releases page](https://github.com/Alpha-Dev001/MySort/releases/latest)
+- **Linux**: `MySort-x64.AppImage` / `MySort-x64.deb` on the
+  [Releases page](https://github.com/Alpha-Dev001/MySort/releases/latest)
 
 Then run the installer / mount the DMG / make the AppImage executable and launch
 MySort.

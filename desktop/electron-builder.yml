@@ -37,22 +37,27 @@ mac:
   # electron-builder converts the 512px PNG to .icns when building on macOS.
   icon: assets/icon.png
   category: public.app-category.utilities
-  artifactName: MySort.${ext}
+  artifactName: MySort-${arch}.${ext}
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   target:
     - target: dmg
-      arch: universal
+      arch:
+        - x64
+        - arm64
     - target: zip
-      arch: universal
+      arch:
+        - x64
+        - arm64
 
 linux:
   # A single PNG is enough; electron-builder derives the hicolor icon set.
   icon: assets/icon.png
   category: Utility
-  artifactName: MySort.${ext}
+  maintainer: "MySort <noreply@mysort.app>"
+  artifactName: MySort-${arch}.${ext}
   target:
     - target: AppImage
       arch: x64
