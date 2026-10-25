@@ -31,15 +31,15 @@ const StartupTab: React.FC<{
       <FieldRow
         label={
           <>
-            <Download size={14} aria-hidden="true" /> Start MySort when Windows starts
+            <Download size={14} aria-hidden="true" /> Start MySort when I log in
           </>
         }
         status={savingFor('startWithWindows')}
       >
         <Toggle
           checked={settings.startWithWindows}
-          onChange={(next) => save({ startWithWindows: next }, 'Start with Windows')}
-          label="Start with Windows"
+          onChange={(next) => save({ startWithWindows: next }, 'Start at login')}
+          label="Start at login"
         />
       </FieldRow>
       <FieldRow

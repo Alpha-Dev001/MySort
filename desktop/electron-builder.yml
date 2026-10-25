@@ -9,8 +9,12 @@ files:
 asarUnpack:
   - '**/node_modules/better-sqlite3/**'
 npmRebuild: true
-artifactName: MySort-Setup.exe
+# Keep the Windows installer's historic, unversioned name so the existing
+# "latest/download/MySort-Setup.exe" link keeps working.
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+
 win:
+  artifactName: MySort-Setup.exe
   # Generated from logo.svg by scripts/generate-icons.mjs; the .ico carries
   # 16..256 px so the shell picks the right size for the taskbar, the installer
   # list and the Start menu.
@@ -28,3 +32,29 @@ nsis:
   shortcutName: MySort
   uninstallDisplayName: MySort
   deleteAppDataOnUninstall: false
+
+mac:
+  # electron-builder converts the 512px PNG to .icns when building on macOS.
+  icon: assets/icon.png
+  category: public.app-category.utilities
+  artifactName: MySort.${ext}
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  target:
+    - target: dmg
+      arch: universal
+    - target: zip
+      arch: universal
+
+linux:
+  # A single PNG is enough; electron-builder derives the hicolor icon set.
+  icon: assets/icon.png
+  category: Utility
+  artifactName: MySort.${ext}
+  target:
+    - target: AppImage
+      arch: x64
+    - target: deb
+      arch: x64

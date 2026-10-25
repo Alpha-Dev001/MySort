@@ -128,7 +128,12 @@ export async function hashFile(p: string, maxBytes: number): Promise<string | nu
  * exclusions still apply.
  */
 export async function windowsAttributes(p: string): Promise<{ hidden: boolean; system: boolean }> {
-  if (process.platform !== 'win32') return { hidden: false, system: false }
+  // On Unix-like systems a leading dot marks a file as hidden; there is no
+  // separate "system" attribute.
+  if (process.platform !== 'win32') {
+    const base = p.split(/[\\/]/).pop() ?? ''
+    return { hidden: base.startsWith('.'), system: false }
+  }
   try {
     const out = await new Promise<string>((resolve, reject) => {
       const child = execFile('attrib', [p], { timeout: 2000, windowsHide: true }, (err, stdout) => {

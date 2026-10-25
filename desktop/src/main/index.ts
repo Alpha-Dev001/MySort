@@ -5,6 +5,7 @@
  */
 
 import { app, BrowserWindow, dialog } from 'electron'
+import fs from 'node:fs'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import Database from 'better-sqlite3'
@@ -56,6 +57,29 @@ const launchedHidden = process.argv.includes('--hidden')
 
 /** Register/unregister the login item. Idempotent; use for both toggles and boot sync. */
 function syncLoginItem(startWithWindows: boolean): void {
+  // Linux has no single standard login-item API; use the XDG autostart entry.
+  if (process.platform === 'linux') {
+    const home = process.env['HOME'] ?? app.getPath('home')
+    const dir = path.join(home, '.config', 'autostart')
+    const file = path.join(dir, 'MySort.desktop')
+    try {
+      if (!startWithWindows) {
+        fs.rmSync(file, { force: true })
+        return
+      }
+      fs.mkdirSync(dir, { recursive: true })
+      const exec = process.defaultApp
+        ? `${process.execPath} ${pathToFileURL(process.argv[1] ?? '').href}`
+        : `${process.execPath} --hidden`
+      fs.writeFileSync(
+        file,
+        `[Desktop Entry]\nType=Application\nName=MySort\nExec=${exec}\nTerminal=false\nX-GNOME-Autostart-enabled=true\n`
+      )
+    } catch (e) {
+      logger.warn(`could not update Linux autostart entry: ${(e as Error).message}`)
+    }
+    return
+  }
   app.setLoginItemSettings({
     openAtLogin: startWithWindows,
     path: process.execPath,
@@ -103,17 +127,28 @@ async function main(): Promise<void> {
 
   configureLogging(settingsService.get().logLevel)
 
+  const home = process.env['HOME'] ?? app.getPath('home')
   const denyPaths = buildDefaultDenyPaths({
     windowsDir: process.env['WINDIR'],
     programFiles: process.env['ProgramFiles'],
     programFilesX86: process.env['ProgramFiles(x86)'],
-    appData: process.env['APPDATA'],
-    localAppData: process.env['LOCALAPPDATA'],
+    appData: process.env['APPDATA'] ?? (process.platform === 'darwin'
+      ? path.join(home, 'Library', 'Application Support')
+      : process.platform === 'linux'
+        ? (process.env['XDG_CONFIG_HOME'] || path.join(home, '.config'))
+        : undefined),
+    localAppData: process.env['LOCALAPPDATA'] ?? (process.platform === 'darwin'
+      ? path.join(home, 'Library', 'Caches')
+      : process.platform === 'linux'
+        ? path.join(home, '.local', 'share')
+        : undefined),
     userData: app.getPath('userData'),
-    startupDirs: [
-      path.join(process.env['APPDATA'] ?? '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'),
-      path.join(process.env['PROGRAMDATA'] ?? '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'),
-    ].filter(Boolean),
+    startupDirs: process.platform === 'win32'
+      ? [
+          path.join(process.env['APPDATA'] ?? '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'),
+          path.join(process.env['PROGRAMDATA'] ?? '', 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup'),
+        ].filter(Boolean)
+      : [],
   })
 
   const nodeFs = new NodeFs()

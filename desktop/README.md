@@ -237,14 +237,19 @@ user data.
 
 ## Packaging
 
-`electron-builder.yml` builds a NSIS installer for Windows x64 with:
+`electron-builder.yml` builds installers for Windows, macOS and Linux:
 
-- `oneClick: false`, `perMachine: false`
-- Desktop + Start Menu shortcuts
-- App data preserved on uninstall
-- `better-sqlite3` unpacked from ASAR (native binary)
-- `assets/icon.ico` (16–256 px, generated from `logo.svg`)
-- Artifact: `MySort-Setup.exe`
+- **Windows (x64)**: NSIS installer (`MySort-Setup.exe`), `oneClick: false`,
+  `perMachine: false`, Desktop + Start Menu shortcuts, app data preserved on
+  uninstall.
+- **macOS (universal)**: DMG and ZIP (`MySort.dmg`, `MySort.zip`).
+- **Linux (x64)**: AppImage and deb (`MySort.AppImage`, `MySort.deb`).
+
+Common to all targets: `better-sqlite3` unpacked from ASAR (native binary),
+icons generated from `logo.svg`. Build with `npm run dist:win`,
+`npm run dist:mac`, `npm run dist:linux` (or `npm run dist:ci` on macOS/Linux). macOS and
+Linux packages must be built on their respective hosts (or via CI) because of
+the native module and code-signing requirements.
 
 ## Tests
 
